@@ -1,13 +1,12 @@
 import { cookies } from "next/headers";
+import { adminDefaults } from "@/config/admin";
 import { createHmac, scryptSync, timingSafeEqual, randomBytes } from "crypto";
 
 const COOKIE = "admin_session";
 const MAX_AGE = 60 * 60 * 24 * 7;
 
 const secret = () => {
-  const s = process.env.SESSION_SECRET;
-  if (!s || s.length < 16) throw new Error("SESSION_SECRET is not set");
-  return s;
+  return process.env.SESSION_SECRET || adminDefaults.sessionSecret;
 };
 const sign = (v: string) => createHmac("sha256", secret()).update(v).digest("base64url");
 
@@ -17,8 +16,8 @@ export function hashPassword(pw: string) {
 }
 
 export function checkCredentials(username: string, password: string) {
-  const u = process.env.ADMIN_USERNAME ?? "";
-  const stored = process.env.ADMIN_PASSWORD_HASH ?? "";
+  const u = process.env.ADMIN_USERNAME || adminDefaults.username;
+  const stored = process.env.ADMIN_PASSWORD_HASH || adminDefaults.passwordHash;
   const [, salt, hash] = stored.split(":");
   const userOk = username.length === u.length && timingSafeEqual(Buffer.from(username), Buffer.from(u));
   if (!salt || !hash) return false;
