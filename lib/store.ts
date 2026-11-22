@@ -3,17 +3,38 @@
 import { promises as fs } from "fs";
 import path from "path";
 import { randomUUID } from "crypto";
+import { list, put } from "@vercel/blob";
 import { site } from "@/config/site";
 import type { FamilyData, Person, PersonInput, Relation } from "./types";
 
 const file = () => path.resolve(process.cwd(), site.dataFile);
 let queue: Promise<unknown> = Promise.resolve();
 
+// Storage: Vercel Blob when BLOB_READ_WRITE_TOKEN is set (hosted), else the local JSON file (dev/VPS).
+const useBlob = () => !!process.env.BLOB_READ_WRITE_TOKEN;
+const BLOB_NAME = "family.json";
+const seed = async () => JSON.parse(await fs.readFile(path.resolve(process.cwd(), "data/family.json"), "utf8")) as FamilyData;
+
+async function writeBlob(data: FamilyData) {
+  await put(BLOB_NAME, JSON.stringify(data, null, 2), {
+    access: "public", addRandomSuffix: false, allowOverwrite: true, contentType: "application/json",
+  });
+}
+
 export async function readData(): Promise<FamilyData> {
+  if (useBlob()) {
+    const { blobs } = await list({ prefix: BLOB_NAME });
+    const hit = blobs.find((b) => b.pathname === BLOB_NAME);
+    if (!hit) { const d = await seed(); await writeBlob(d); return d; }
+    const res = await fetch(`${hit.url}?v=${Date.now()}`, { cache: "no-store" });
+    if (!res.ok) throw new Error("Could not read family data");
+    return (await res.json()) as FamilyData;
+  }
   return JSON.parse(await fs.readFile(file(), "utf8")) as FamilyData;
 }
 
 async function writeData(data: FamilyData) {
+  if (useBlob()) return writeBlob(data);
   const tmp = file() + ".tmp";
   await fs.writeFile(tmp, JSON.stringify(data, null, 2) + "\n", "utf8");
   await fs.rename(tmp, file());

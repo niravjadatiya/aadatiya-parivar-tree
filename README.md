@@ -16,4 +16,4 @@ npm run dev
 - Data access lives in `lib/store.ts` only, so it can be swapped for a database later (SaaS).
 
 ## Notes
-- Admin edits write to the JSON file, so hosting needs a writable disk (VPS/Docker/Railway/Render with a volume). Plain Vercel has a read-only filesystem.
+- Storage: on Vercel, connect a Blob store (Storage tab) and edits save there automatically; locally it uses data/family.json.
