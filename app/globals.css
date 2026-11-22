@@ -55,9 +55,8 @@ dt{color:var(--muted)}
 dd{margin:0;text-align:right}
 .admin-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 @media(min-width:768px){
-  .panel{right:0;top:0;bottom:0;width:340px;box-shadow:-2px 0 12px rgba(43,33,24,.08)}
-  .tools{right:356px}
-  .stage:has(~ .panel) .tools{right:12px}
+  .panel{right:0;top:72px;bottom:0;width:340px;box-shadow:-2px 0 12px rgba(43,33,24,.08)}
+  .stage:has(~ .panel) .tools{right:356px}
 }
 @media(max-width:767px){
   .panel{left:0;right:0;bottom:0;max-height:55dvh;border-radius:20px 20px 0 0;box-shadow:0 -4px 16px rgba(43,33,24,.08)}
@@ -86,3 +85,12 @@ label.radio{flex-direction:row;align-items:center;gap:8px;font-size:15px;font-we
 .logo{width:64px;height:64px;border-radius:20px;background:var(--accent);display:flex;align-items:center;justify-content:center;margin-bottom:6px}
 .card{width:100%;max-width:380px;background:#fff;border-radius:24px;box-shadow:0 8px 28px rgba(43,33,24,.08);padding:24px;display:flex;flex-direction:column;gap:16px}
 .card h2{font-size:18px}
+
+.searchbar{position:relative;padding:10px 20px;background:#fff;border-top:1px solid var(--line);z-index:7}
+.searchbar input{background:var(--soft);border-color:transparent}
+.results{list-style:none;margin:6px 0 0;padding:6px;position:absolute;left:20px;right:20px;top:100%;background:#fff;border-radius:14px;box-shadow:0 8px 28px rgba(43,33,24,.15);max-height:50dvh;overflow:auto}
+.results button{width:100%;min-height:48px;display:flex;align-items:center;gap:10px;border:0;background:transparent;text-align:left;border-radius:10px;padding:4px 8px;font-size:15px}
+.results button:hover{background:var(--soft)}
+.results small{color:var(--muted)}
+.results .none{padding:12px;color:var(--muted);font-size:14px}
+@media(min-width:768px){.searchbar{max-width:420px;border-top:0;background:transparent;position:absolute;top:8px;left:50%;transform:translateX(-50%);width:420px;padding:0;margin-top:62px}.searchbar input{background:#fff;box-shadow:var(--shadow)}.results{left:0;right:0}}

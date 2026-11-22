@@ -123,6 +123,32 @@ export default function FamilyApp({ people, isAdmin, familyName, defaultLang, la
   };
   const logout = () => startT(async () => { await logoutAction(); router.refresh(); });
 
+  // search
+  const [q, setQ] = useState("");
+  const results = useMemo(() => {
+    const k = q.trim().toLowerCase();
+    if (!k) return [] as Person[];
+    return people.filter((p) => p.name.en.toLowerCase().includes(k) || (p.name.gu ?? "").includes(k)).slice(0, 6);
+  }, [q, people]);
+  const pick = (p: Person) => {
+    const parentOf = new Map<string, (typeof roots)[number] | undefined>();
+    const unitOf = new Map<string, (typeof roots)[number]>();
+    const walk = (u: (typeof roots)[number], par?: (typeof roots)[number]) => {
+      parentOf.set(u.id, par); unitOf.set(u.primary.id, u); if (u.spouse) unitOf.set(u.spouse.id, u);
+      u.children.forEach((c) => walk(c, u));
+    };
+    roots.forEach((r) => walk(r));
+    const unit = unitOf.get(p.id); if (!unit) return;
+    const next = new Set(expanded);
+    for (let a = parentOf.get(unit.id); a; a = parentOf.get(a.id)) next.add(a.id);
+    setExpanded(next); setSelectedId(p.id); setQ("");
+    const l = layout(roots, next); const node = l.nodes.find((n) => n.unit.id === unit.id); const el = vp.current;
+    if (node && el) {
+      const wide = el.clientWidth >= 768 + 340;
+      setView({ k: 1, x: (wide ? (el.clientWidth - 340) / 2 : el.clientWidth / 2) - node.x, y: Math.max(8, el.clientHeight * 0.22 - node.y) });
+    }
+  };
+
   const rootNode = nodes[0];
   const personLine = (p: Person) => formatDate(p.birth, lang);
 
@@ -146,6 +172,17 @@ export default function FamilyApp({ people, isAdmin, familyName, defaultLang, la
           {isAdmin && <button className="btn soft hide-sm" onClick={logout}>{t.signOut}</button>}
         </div>
       </header>
+
+      <div className="searchbar">
+        <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t.search} aria-label={t.search} />
+        {q.trim() && (
+          <ul className="results">
+            {results.length ? results.map((r) => (
+              <li key={r.id}><button onClick={() => pick(r)}><Avatar p={r} size={32} /><span>{fullName(r, lang)}{r.birth ? <small> · {formatDate(r.birth, lang)}</small> : null}</span></button></li>
+            )) : <li className="none">{t.noResults}</li>}
+          </ul>
+        )}
+      </div>
 
       <div className="stage">
         <div className="viewport" ref={vp} onPointerDown={onPointerDown} onClickCapture={(e) => { if (moved.current) { e.stopPropagation(); e.preventDefault(); moved.current = false; } }}>
