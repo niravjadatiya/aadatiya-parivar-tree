@@ -1,0 +1,97 @@
+// Data layer. To go SaaS later, replace this file with a database-backed version
+// exposing the same functions (add a tenantId argument).
+import { promises as fs } from "fs";
+import path from "path";
+import { randomUUID } from "crypto";
+import { site } from "@/config/site";
+import type { FamilyData, Person, PersonInput, Relation } from "./types";
+
+const file = () => path.resolve(process.cwd(), site.dataFile);
+let queue: Promise<unknown> = Promise.resolve();
+
+export async function readData(): Promise<FamilyData> {
+  return JSON.parse(await fs.readFile(file(), "utf8")) as FamilyData;
+}
+
+async function writeData(data: FamilyData) {
+  const tmp = file() + ".tmp";
+  await fs.writeFile(tmp, JSON.stringify(data, null, 2) + "\n", "utf8");
+  await fs.rename(tmp, file());
+}
+
+function mutate<T>(fn: (d: FamilyData) => T): Promise<T> {
+  const run = queue.then(async () => {
+    const d = await readData();
+    const r = fn(d);
+    await writeData(d);
+    return r;
+  });
+  queue = run.catch(() => undefined);
+  return run;
+}
+
+const DATE = /^\d{4}(-\d{2}(-\d{2})?)?$/;
+function clean(input: PersonInput) {
+  const nameEn = input.nameEn.trim();
+  if (!nameEn) throw new Error("English name is required");
+  for (const v of [input.birth, input.death]) {
+    if (v && !DATE.test(v)) throw new Error("Dates must look like 2018, 2018-06 or 2018-06-27");
+  }
+  return {
+    name: { en: nameEn, ...(input.nameGu?.trim() ? { gu: input.nameGu.trim() } : {}) },
+    gender: input.gender,
+    ...(input.birth ? { birth: input.birth } : {}),
+    ...(input.death ? { death: input.death } : {}),
+  };
+}
+
+export function addPerson(relation: Relation, targetId: string, input: PersonInput) {
+  return mutate((d) => {
+    const t = d.people.find((p) => p.id === targetId);
+    if (!t) throw new Error("Person not found");
+    const p: Person = { id: randomUUID().slice(0, 8), ...clean(input) };
+    if (relation === "child") p.parentId = t.id;
+    else if (relation === "spouse") {
+      if (t.spouseId) throw new Error("This person already has a spouse");
+      p.spouseId = t.id;
+      t.spouseId = p.id;
+    } else if (relation === "parent") {
+      if (t.parentId) throw new Error("Parent already exists. Add a spouse to the existing parent instead");
+      t.parentId = p.id;
+    } else if (relation === "sibling") {
+      if (!t.parentId) throw new Error("Add parents first, then siblings");
+      p.parentId = t.parentId;
+    }
+    d.people.push(p);
+    return p.id;
+  });
+}
+
+export function updatePerson(id: string, input: PersonInput) {
+  return mutate((d) => {
+    const p = d.people.find((x) => x.id === id);
+    if (!p) throw new Error("Person not found");
+    const c = clean(input);
+    p.name = c.name;
+    p.gender = c.gender;
+    if (c.birth) p.birth = c.birth; else delete p.birth;
+    if (c.death) p.death = c.death; else delete p.death;
+  });
+}
+
+export function deletePerson(id: string) {
+  return mutate((d) => {
+    const p = d.people.find((x) => x.id === id);
+    if (!p) throw new Error("Person not found");
+    if (d.people.length <= 1) throw new Error("Cannot delete the last person");
+    const unitIds = [p.id, p.spouseId];
+    if (d.people.some((x) => x.parentId && unitIds.includes(x.parentId) && x.id !== p.id)) {
+      throw new Error("Remove their children first");
+    }
+    d.people = d.people.filter((x) => x.id !== id);
+    for (const x of d.people) {
+      if (x.spouseId === id) delete x.spouseId;
+      if (x.parentId === id) delete x.parentId;
+    }
+  });
+}

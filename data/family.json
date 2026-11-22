@@ -1,0 +1,11 @@
+{
+  "people": [
+    { "id": "manilal", "name": { "en": "Manilal Adatiya", "gu": "મણિલાલ આડતીયા" }, "gender": "male", "spouseId": "dhirajben" },
+    { "id": "dhirajben", "name": { "en": "Dhirajben Adatiya", "gu": "ધીરજબેન આડતીયા" }, "gender": "female", "spouseId": "manilal" },
+    { "id": "jitendra", "name": { "en": "Jitendra Adatiya", "gu": "જિતેન્દ્ર આડતીયા" }, "gender": "male", "birth": "1960-04-19", "parentId": "manilal", "spouseId": "jayshreeben" },
+    { "id": "jayshreeben", "name": { "en": "Jayshreeben Adatiya", "gu": "જયશ્રીબેન આડતીયા" }, "gender": "female", "spouseId": "jitendra" },
+    { "id": "nirav", "name": { "en": "Nirav Adatiya", "gu": "નિરવ આડતીયા" }, "gender": "male", "birth": "1991-01-13", "parentId": "jitendra", "spouseId": "komal" },
+    { "id": "komal", "name": { "en": "Komal Adatiya", "gu": "કોમલ આડતીયા" }, "gender": "female", "birth": "1990-08-16", "spouseId": "nirav" },
+    { "id": "dhyan", "name": { "en": "Dhyan Adatiya", "gu": "ધ્યાન આડતીયા" }, "gender": "male", "birth": "2018-06-27", "parentId": "nirav" }
+  ]
+}
