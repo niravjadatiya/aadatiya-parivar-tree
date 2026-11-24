@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from
 import { useRouter } from "next/navigation";
 import type { Lang } from "@/config/site";
 import type { Person, Relation } from "@/lib/types";
+import PaintedTree from "./PaintedTree";
 import { buildUnits, countDescendants, layout, FULL, COMPACT } from "@/lib/tree";
 import type { Node } from "@/lib/tree";
 import { getT } from "@/lib/i18n";
@@ -39,6 +40,9 @@ export default function FamilyApp({ people, isAdmin, familyName, defaultLang, la
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(null);
   const [view, setView] = useState({ x: 0, y: 0, k: 1 });
+  const [mode, setMode] = useState<"chart" | "painted">("chart");
+  useEffect(() => { try { if (localStorage.getItem("view") === "painted") setMode("painted"); } catch {} }, []);
+  const pickMode = (m: "chart" | "painted") => { setMode(m); try { localStorage.setItem("view", m); } catch {} };
   const [compact, setCompact] = useState(false);
   const M = compact ? COMPACT : FULL;
   const vp = useRef<HTMLDivElement>(null);
@@ -204,11 +208,19 @@ export default function FamilyApp({ people, isAdmin, familyName, defaultLang, la
               <button aria-pressed={lang === "gu"} onClick={() => pickLang("gu")}>ગુ</button>
             </div>
           )}
+          <div className="seg" role="group" aria-label="View">
+            <button aria-pressed={mode === "chart"} onClick={() => pickMode("chart")}>{t.viewChart}</button>
+            <button aria-pressed={mode === "painted"} onClick={() => pickMode("painted")}>{t.viewTree}</button>
+          </div>
           {isAdmin && <button className="btn soft hide-sm" onClick={logout}>{t.signOut}</button>}
         </div>
       </header>
 
       <div className="stage">
+        {mode === "painted" ? (
+          <PaintedTree roots={roots} lang={lang} rootLabel={lang === "gu" ? familyName.gu : familyName.en} onSelect={setSelectedId} labels={{ fit: t.fit, save: t.saveImage }} />
+        ) : (
+          <>
         <div className="viewport" ref={vp} onPointerDown={onPointerDown} onClickCapture={(e) => { if (moved.current) { e.stopPropagation(); e.preventDefault(); moved.current = false; } }}>
           <div className="world" style={{ transform: `translate(${view.x}px,${view.y}px) scale(${view.k})`, width, height: height + 40 }}>
             <svg className="lines" width={width} height={height + 40} aria-hidden><path d={lines.join("")} fill="none" stroke="#CDBFAB" strokeWidth="2" /></svg>
@@ -253,6 +265,8 @@ export default function FamilyApp({ people, isAdmin, familyName, defaultLang, la
           <button className="btn soft sq" aria-label="Zoom out" onClick={() => zoom(0.8)}>−</button>
           <button className="btn soft sq" aria-label="Zoom in" onClick={() => zoom(1.25)}>+</button>
         </div>
+          </>
+        )}
       </div>
 
       {sel && (
