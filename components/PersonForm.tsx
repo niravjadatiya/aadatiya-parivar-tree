@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState, useTransition } from "react";
 import type { Lang } from "@/config/site";
-import type { Person, Relation } from "@/lib/types";
+import type { Business, Person, Relation } from "@/lib/types";
 import { getT } from "@/lib/i18n";
 import { addPersonAction, updatePersonAction, setPhotoAction, removePhotoAction } from "@/app/actions";
 
@@ -27,6 +27,8 @@ export default function PersonForm({ form, person, target, lang, onClose, onDone
   const [pending, start] = useTransition();
   const [file, setFile] = useState<File | null>(null);
   const [removeIt, setRemoveIt] = useState(false);
+  const [biz, setBiz] = useState<Business[]>(person?.businesses ?? []);
+  const setB = (i: number, patch: Partial<Business>) => setBiz((l) => l.map((b, j) => (j === i ? { ...b, ...patch } : b)));
   const fileRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(person?.photo ?? null);
   useEffect(() => {
@@ -51,6 +53,8 @@ export default function PersonForm({ form, person, target, lang, onClose, onDone
             nameEn: String(f.get("nameEn") ?? ""), nameGu: String(f.get("nameGu") ?? ""),
             gender: (f.get("gender") === "female" ? "female" : "male") as "male" | "female",
             birth: String(f.get("birth") ?? "").trim() || undefined, death: String(f.get("death") ?? "").trim() || undefined,
+            phone: String(f.get("phone") ?? "").trim() || undefined, phonePublic: f.get("phonePublic") === "on",
+            businesses: biz,
           };
           setErr("");
           start(async () => {
@@ -89,6 +93,23 @@ export default function PersonForm({ form, person, target, lang, onClose, onDone
         </fieldset>
         <label>{t.birth} <small>({t.optional})</small><input name="birth" inputMode="numeric" placeholder={t.dateHint} defaultValue={person?.birth ?? ""} /></label>
         <label>{t.death} <small>({t.optional})</small><input name="death" inputMode="numeric" placeholder={t.dateHint} defaultValue={person?.death ?? ""} /></label>
+        <label>{t.phone} <small>({t.optional})</small><input name="phone" type="tel" inputMode="tel" placeholder="+91 98765 43210" defaultValue={person?.phone ?? ""} /></label>
+        <label className="radio"><input type="checkbox" name="phonePublic" defaultChecked={!!person?.phonePublic} />{t.showPublic}</label>
+
+        <div className="biz-head"><b>{t.businesses}</b><small>({t.optional})</small></div>
+        {biz.map((b, i) => (
+          <div className="biz" key={i}>
+            <label>{t.businessName}<input value={b.name} onChange={(e) => setB(i, { name: e.target.value })} required maxLength={80} /></label>
+            <label>{t.about} <small>({t.optional})</small><input value={b.about ?? ""} onChange={(e) => setB(i, { about: e.target.value })} maxLength={200} /></label>
+            <label>{t.phone} <small>({t.optional})</small><input type="tel" inputMode="tel" value={b.phone ?? ""} onChange={(e) => setB(i, { phone: e.target.value })} /></label>
+            <label>{t.email} <small>({t.optional})</small><input type="email" inputMode="email" value={b.email ?? ""} onChange={(e) => setB(i, { email: e.target.value })} /></label>
+            <label>{t.website} <small>({t.optional})</small><input inputMode="url" placeholder="example.com" value={b.website ?? ""} onChange={(e) => setB(i, { website: e.target.value })} /></label>
+            <label>{t.city} <small>({t.optional})</small><input value={b.city ?? ""} onChange={(e) => setB(i, { city: e.target.value })} maxLength={60} /></label>
+            <label className="radio"><input type="checkbox" checked={!!b.public} onChange={(e) => setB(i, { public: e.target.checked })} />{t.showPublic}</label>
+            <button type="button" className="btn danger" onClick={() => setBiz((l) => l.filter((_, j) => j !== i))}>{t.remove}</button>
+          </div>
+        ))}
+        {biz.length < 10 && <button type="button" className="btn soft" onClick={() => setBiz((l) => [...l, { name: "" }])}>+ {t.addBusiness}</button>}
         {err && <p role="alert" className="err">{err}</p>}
         <div className="row">
           <button type="button" className="btn soft" onClick={onClose}>{t.cancel}</button>

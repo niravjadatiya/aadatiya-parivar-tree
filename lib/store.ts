@@ -5,7 +5,7 @@ import path from "path";
 import { randomUUID } from "crypto";
 import { get, put } from "@vercel/blob";
 import { site } from "@/config/site";
-import type { FamilyData, Person, PersonInput, Relation } from "./types";
+import type { Business, FamilyData, Person, PersonInput, Relation } from "./types";
 
 const file = () => path.resolve(process.cwd(), site.dataFile);
 let queue: Promise<unknown> = Promise.resolve();
@@ -56,6 +56,27 @@ function mutate<T>(fn: (d: FamilyData) => T): Promise<T> {
   return run;
 }
 
+const PHONE = /^\+?[\d\s()-]{7,20}$/;
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+function cleanBusiness(b: Business): Business {
+  const name = (b.name ?? "").trim().slice(0, 80);
+  if (!name) throw new Error("Business name is required");
+  const out: Business = { name };
+  const about = b.about?.trim().slice(0, 200); if (about) out.about = about;
+  const city = b.city?.trim().slice(0, 60); if (city) out.city = city;
+  const phone = b.phone?.trim(); if (phone) { if (!PHONE.test(phone)) throw new Error(`Invalid phone for ${name}`); out.phone = phone; }
+  const email = b.email?.trim(); if (email) { if (!EMAIL.test(email) || email.length > 100) throw new Error(`Invalid email for ${name}`); out.email = email; }
+  let web = b.website?.trim();
+  if (web) {
+    if (!/^https?:\/\//i.test(web)) web = "https://" + web;
+    try { const u = new URL(web); if (!/^https?:$/.test(u.protocol) || !u.hostname.includes(".")) throw 0; web = u.toString(); } catch { throw new Error(`Invalid website for ${name}`); }
+    if (web.length > 200) throw new Error(`Website too long for ${name}`);
+    out.website = web;
+  }
+  if (b.public) out.public = true;
+  return out;
+}
+
 const DATE = /^\d{4}(-\d{2}(-\d{2})?)?$/;
 function clean(input: PersonInput) {
   const nameEn = input.nameEn.trim();
@@ -63,7 +84,12 @@ function clean(input: PersonInput) {
   for (const v of [input.birth, input.death]) {
     if (v && !DATE.test(v)) throw new Error("Dates must look like 2018, 2018-06 or 2018-06-27");
   }
+  const phone = input.phone?.trim();
+  if (phone && !PHONE.test(phone)) throw new Error("Invalid phone number");
+  const businesses = (input.businesses ?? []).slice(0, 10).map(cleanBusiness);
   return {
+    ...(phone ? { phone, ...(input.phonePublic ? { phonePublic: true } : {}) } : {}),
+    ...(businesses.length ? { businesses } : {}),
     name: { en: nameEn, ...(input.nameGu?.trim() ? { gu: input.nameGu.trim() } : {}) },
     gender: input.gender,
     ...(input.birth ? { birth: input.birth } : {}),
@@ -102,6 +128,9 @@ export function updatePerson(id: string, input: PersonInput) {
     p.gender = c.gender;
     if (c.birth) p.birth = c.birth; else delete p.birth;
     if (c.death) p.death = c.death; else delete p.death;
+    if (c.phone) p.phone = c.phone; else delete p.phone;
+    if (c.phonePublic) p.phonePublic = true; else delete p.phonePublic;
+    if (c.businesses) p.businesses = c.businesses; else delete p.businesses;
   });
 }
 

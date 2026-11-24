@@ -275,6 +275,29 @@ export default function FamilyApp({ people, isAdmin, familyName, defaultLang, la
             <div><dt>{t.parents}</dt><dd>{selParents.length ? selParents.map((p) => shortName(p, lang)).join(" & ") : t.none}</dd></div>
             <div><dt>{t.children}</dt><dd>{selChildren.length ? selChildren.map((p) => shortName(p, lang)).join(", ") : t.none}</dd></div>
           </dl>
+          {(sel.phone || sel.businesses?.length) && (
+            <div className="contact">
+              {sel.phone && (
+                <div className="contact-row">
+                  <span>{t.phone}{isAdmin && !sel.phonePublic && <em className="lock"> · {t.privateTag}</em>}</span>
+                  <span className="links"><a href={`tel:${sel.phone}`}>{sel.phone}</a><a href={`https://wa.me/${sel.phone.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer">WhatsApp</a></span>
+                </div>
+              )}
+              {sel.businesses?.map((b, i) => (
+                <div className="biz-card" key={i}>
+                  <b>{b.name}{isAdmin && !b.public && <em className="lock"> · {t.privateTag}</em>}</b>
+                  {b.about && <p>{b.about}</p>}
+                  {b.city && <p className="muted">{b.city}</p>}
+                  <span className="links">
+                    {b.phone && <a href={`tel:${b.phone}`}>{b.phone}</a>}
+                    {b.phone && <a href={`https://wa.me/${b.phone.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer">WhatsApp</a>}
+                    {b.email && <a href={`mailto:${b.email}`}>{b.email}</a>}
+                    {b.website && <a href={b.website} target="_blank" rel="noopener noreferrer">{b.website.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "")}</a>}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
           {isAdmin && (
             <div className="admin-actions">
               <button className="btn primary" onClick={() => setForm({ mode: "add", relation: "child", targetId: sel.id })}>+ {t.addChild}</button>
