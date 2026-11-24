@@ -108,3 +108,9 @@ label.radio{flex-direction:row;align-items:center;gap:8px;font-size:15px;font-we
 .foot a{color:var(--accent);font-weight:600;text-decoration:none}
 .foot-links{display:flex;gap:12px}
 .foot-links a{padding:4px 0}
+.compact .unit{border-radius:14px}
+.compact .unit-main{gap:8px;padding:0 4px 0 10px;border-radius:14px}
+.compact .unit-text b{font-size:13px;line-height:1.2}
+.compact .unit-text small{font-size:11px}
+.compact .toggle{margin-right:8px;min-width:36px;height:36px;border-radius:18px;font-size:13px}
+.compact .toggle.badge{padding:0 8px}

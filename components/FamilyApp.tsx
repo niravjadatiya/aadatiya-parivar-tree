@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from
 import { useRouter } from "next/navigation";
 import type { Lang } from "@/config/site";
 import type { Person, Relation } from "@/lib/types";
-import { buildUnits, countDescendants, layout, CARD_H, CARD_W, TOP } from "@/lib/tree";
+import { buildUnits, countDescendants, layout, FULL, COMPACT } from "@/lib/tree";
 import type { Node } from "@/lib/tree";
 import { getT } from "@/lib/i18n";
 import { formatDate, fullName, shortName } from "@/lib/format";
@@ -39,6 +39,8 @@ export default function FamilyApp({ people, isAdmin, familyName, defaultLang, la
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(null);
   const [view, setView] = useState({ x: 0, y: 0, k: 1 });
+  const [compact, setCompact] = useState(false);
+  const M = compact ? COMPACT : FULL;
   const vp = useRef<HTMLDivElement>(null);
   const moved = useRef(false);
   const t = getT(lang);
@@ -48,7 +50,7 @@ export default function FamilyApp({ people, isAdmin, familyName, defaultLang, la
 
   const byId = useMemo(() => new Map(people.map((p) => [p.id, p])), [people]);
   const roots = useMemo(() => buildUnits(people), [people]);
-  const { nodes, lines, width, height } = useMemo(() => layout(roots, expanded), [roots, expanded]);
+  const { nodes, lines, width, height } = useMemo(() => layout(roots, expanded, M), [roots, expanded, M]);
   const generations = useMemo(() => {
     const d = (u: (typeof roots)[number]): number => 1 + Math.max(0, ...u.children.map(d));
     return Math.max(1, ...roots.map(d));
@@ -59,6 +61,14 @@ export default function FamilyApp({ people, isAdmin, familyName, defaultLang, la
     const k = Math.min(1, (el.clientWidth - 32) / width);
     setView({ k, x: (el.clientWidth - width * k) / 2, y: 8 });
   }, [width]);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const on = () => setCompact(mq.matches);
+    on(); mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, []);
+  const lastCompact = useRef(false);
+  useEffect(() => { if (lastCompact.current !== compact) { lastCompact.current = compact; fit(); } }, [compact, fit]);
   const firstFit = useRef(false);
   useEffect(() => { if (!firstFit.current) { firstFit.current = true; fit(); } }, [fit]);
 
@@ -106,7 +116,15 @@ export default function FamilyApp({ people, isAdmin, familyName, defaultLang, la
     const k = Math.min(2, Math.max(0.3, v.k * f)); const s = k / v.k; return { k, x: cx - (cx - v.x) * s, y: cy - (cy - v.y) * s };
   });
 
-  const toggle = (id: string) => setExpanded((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  // Keep the tapped card exactly where it is on screen: re-layout, then shift the view by how far the card moved.
+  const toggle = (id: string) => {
+    const next = new Set(expanded);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    const before = nodes.find((n) => n.unit.id === id);
+    const after = layout(roots, next, M).nodes.find((n) => n.unit.id === id);
+    setExpanded(next);
+    if (before && after) setView((v) => ({ ...v, x: v.x + (before.x - after.x) * v.k, y: v.y + (before.y - after.y) * v.k }));
+  };
   const allIds = useMemo(() => { const ids: string[] = []; const w = (u: (typeof roots)[number]) => { if (u.children.length) ids.push(u.id); u.children.forEach(w); }; roots.forEach(w); return ids; }, [roots]);
   const expandAll = () => { setExpanded(new Set(allIds)); setTimeout(fit, 30); };
   const collapseAll = () => { setExpanded(new Set()); setTimeout(fit, 30); };
@@ -145,7 +163,7 @@ export default function FamilyApp({ people, isAdmin, familyName, defaultLang, la
     const next = new Set(expanded);
     for (let a = parentOf.get(unit.id); a; a = parentOf.get(a.id)) next.add(a.id);
     setExpanded(next); setSelectedId(p.id); setQ("");
-    const l = layout(roots, next); const node = l.nodes.find((n) => n.unit.id === unit.id); const el = vp.current;
+    const l = layout(roots, next, M); const node = l.nodes.find((n) => n.unit.id === unit.id); const el = vp.current;
     if (node && el) {
       const wide = el.clientWidth >= 768 + 340;
       setView({ k: 1, x: (wide ? (el.clientWidth - 340) / 2 : el.clientWidth / 2) - node.x, y: Math.max(8, el.clientHeight * 0.22 - node.y) });
@@ -160,7 +178,7 @@ export default function FamilyApp({ people, isAdmin, familyName, defaultLang, la
       : formatDate(u.primary.birth, lang);
 
   return (
-    <div className="app">
+    <div className={"app" + (compact ? " compact" : "")}>
       <header className="top">
         <div>
           <h1>{lang === "gu" ? familyName.gu : familyName.en}</h1>
@@ -197,7 +215,7 @@ export default function FamilyApp({ people, isAdmin, familyName, defaultLang, la
 
             {isAdmin && rootNode && !rootNode.unit.primary.parentId && (
               <>
-                <svg className="lines" width={width} height={TOP} aria-hidden><path d={`M${rootNode.x} 44V${TOP}`} stroke="#CDBFAB" strokeWidth="2" fill="none" /></svg>
+                <svg className="lines" width={width} height={M.TOP} aria-hidden><path d={`M${rootNode.x} 44V${M.TOP}`} stroke="#CDBFAB" strokeWidth="2" fill="none" /></svg>
                 <button className="ghost" style={{ left: rootNode.x - 100, top: 0 }} onClick={() => setForm({ mode: "add", relation: "parent", targetId: rootNode.unit.primary.id })}>
                   + {t.addParentsOf} {shortName(rootNode.unit.primary, lang)}
                 </button>
@@ -209,11 +227,11 @@ export default function FamilyApp({ people, isAdmin, familyName, defaultLang, la
               const label = u.spouse ? `${shortName(u.primary, lang)} & ${shortName(u.spouse, lang)}` : fullName(u.primary, lang);
               const isSel = selectedId === u.primary.id || selectedId === u.spouse?.id;
               return (
-                <div key={u.id} className={"unit" + (isSel ? " sel" : "")} style={{ left: n.x - CARD_W / 2, top: n.y, width: CARD_W, height: CARD_H }}>
+                <div key={u.id} className={"unit" + (isSel ? " sel" : "")} style={{ left: n.x - M.W / 2, top: n.y, width: M.W, height: M.H }}>
                   <button className="unit-main" onClick={() => setSelectedId(u.primary.id)} aria-label={label}>
                     <span className="avatars">
-                      <Avatar p={u.primary} />
-                      {u.spouse && <span style={{ marginLeft: -12 }} role="button" aria-label={fullName(u.spouse, lang)} onClick={(e) => { e.stopPropagation(); setSelectedId(u.spouse!.id); }}><Avatar p={u.spouse} /></span>}
+                      <Avatar p={u.primary} size={compact ? 34 : 44} />
+                      {u.spouse && <span style={{ marginLeft: -12 }} role="button" aria-label={fullName(u.spouse, lang)} onClick={(e) => { e.stopPropagation(); setSelectedId(u.spouse!.id); }}><Avatar p={u.spouse} size={compact ? 34 : 44} /></span>}
                     </span>
                     <span className="unit-text"><b>{label}</b><small>{personLine(u)}</small></span>
                   </button>

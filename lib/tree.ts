@@ -29,41 +29,43 @@ export function countDescendants(u: Unit): number {
 }
 export function unitSize(u: Unit) { return u.spouse ? 2 : 1; }
 
-export const CARD_W = 320, CARD_H = 88, GAP_X = 32, GAP_Y = 56, TOP = 76;
+export type Metrics = { W: number; H: number; GX: number; GY: number; TOP: number };
+export const FULL: Metrics = { W: 320, H: 88, GX: 32, GY: 56, TOP: 76 };
+export const COMPACT: Metrics = { W: 232, H: 64, GX: 14, GY: 34, TOP: 64 };
 
 export type Node = { unit: Unit; x: number; y: number; w: number; kids: Node[] };
 type Measured = { unit: Unit; w: number; kids: Measured[] };
 
-function measure(u: Unit, expanded: Set<string>): Measured {
-  const kids = expanded.has(u.id) ? u.children.map((c) => measure(c, expanded)) : [];
-  const kw = kids.reduce((s, k) => s + k.w, 0) + Math.max(0, kids.length - 1) * GAP_X;
-  return { unit: u, w: Math.max(CARD_W, kw), kids };
+function measure(u: Unit, expanded: Set<string>, M: Metrics): Measured {
+  const kids = expanded.has(u.id) ? u.children.map((c) => measure(c, expanded, M)) : [];
+  const kw = kids.reduce((s, k) => s + k.w, 0) + Math.max(0, kids.length - 1) * M.GX;
+  return { unit: u, w: Math.max(M.W, kw), kids };
 }
-function place(m: Measured, left: number, depth: number): Node {
-  const y = TOP + depth * (CARD_H + GAP_Y);
+function place(m: Measured, left: number, depth: number, M: Metrics): Node {
+  const y = M.TOP + depth * (M.H + M.GY);
   if (!m.kids.length) return { unit: m.unit, x: left + m.w / 2, y, w: m.w, kids: [] };
-  const kw = m.kids.reduce((s, k) => s + k.w, 0) + (m.kids.length - 1) * GAP_X;
+  const kw = m.kids.reduce((s, k) => s + k.w, 0) + (m.kids.length - 1) * M.GX;
   let cur = left + (m.w - kw) / 2;
-  const kids = m.kids.map((k) => { const n = place(k, cur, depth + 1); cur += k.w + GAP_X; return n; });
+  const kids = m.kids.map((k) => { const n = place(k, cur, depth + 1, M); cur += k.w + M.GX; return n; });
   return { unit: m.unit, x: (kids[0].x + kids[kids.length - 1].x) / 2, y, w: m.w, kids };
 }
 
-export function layout(roots: Unit[], expanded: Set<string>) {
+export function layout(roots: Unit[], expanded: Set<string>, M: Metrics = FULL) {
   let left = 0;
-  const nodes = roots.map((r) => { const m = measure(r, expanded); const n = place(m, left, 0); left += m.w + GAP_X; return n; });
+  const nodes = roots.map((r) => { const m = measure(r, expanded, M); const n = place(m, left, 0, M); left += m.w + M.GX; return n; });
   const flat: Node[] = [];
   const lines: string[] = [];
   const walk = (n: Node) => {
     flat.push(n);
     if (n.kids.length) {
-      const y0 = n.y + CARD_H, mid = y0 + GAP_Y / 2;
+      const y0 = n.y + M.H, mid = y0 + M.GY / 2;
       lines.push(`M${n.x} ${y0}V${mid}`);
       if (n.kids.length > 1) lines.push(`M${n.kids[0].x} ${mid}H${n.kids[n.kids.length - 1].x}`);
       n.kids.forEach((k) => { lines.push(`M${k.x} ${mid}V${k.y}`); walk(k); });
     }
   };
   nodes.forEach(walk);
-  const width = Math.max(CARD_W, left - GAP_X);
-  const height = Math.max(...flat.map((n) => n.y)) + CARD_H;
+  const width = Math.max(M.W, left - M.GX);
+  const height = Math.max(...flat.map((n) => n.y)) + M.H;
   return { nodes: flat, lines, width, height };
 }
