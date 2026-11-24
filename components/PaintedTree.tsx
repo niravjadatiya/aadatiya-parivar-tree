@@ -70,7 +70,7 @@ export default function PaintedTree({ roots, lang, rootLabel, onSelect, labels }
 
   const save = () => {
     const title = `<text x="${vb.x + 24}" y="${vb.y + 40}" font-size="26" font-weight="700" fill="#4A2D20" font-family="system-ui, sans-serif">${rootLabel.replace(/&/g, "&amp;")}</text>`;
-    const xml = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb.x} ${vb.y} ${vb.w} ${vb.h}" width="${vb.w}" height="${vb.h}" font-family="system-ui, sans-serif">${inner}${title}</svg>`;
+    const xml = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb.x} ${vb.y} ${vb.w} ${vb.h}" width="${vb.w}" height="${vb.h}" font-family="system-ui, sans-serif"><rect x="${vb.x}" y="${vb.y}" width="${vb.w}" height="${vb.h}" fill="url(#sky)"/>${inner}${title}</svg>`;
     const img = new Image();
     img.onload = () => {
       const scale = Math.min(2, 4096 / Math.max(vb.w, vb.h));
