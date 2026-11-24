@@ -14,7 +14,8 @@ let queue: Promise<unknown> = Promise.resolve();
 const blobToken = () =>
   process.env.BLOB_READ_WRITE_TOKEN ||
   Object.entries(process.env).find(([k, v]) => k.endsWith("READ_WRITE_TOKEN") && v)?.[1];
-const useBlob = () => !!blobToken();
+// Keyless mode: Vercel sets BLOB_STORE_ID and the SDK authenticates with the deployment OIDC token.
+const useBlob = () => !!blobToken() || !!process.env.BLOB_STORE_ID;
 const BLOB_NAME = "family.json";
 const seed = async () => JSON.parse(await fs.readFile(path.resolve(process.cwd(), "data/family.json"), "utf8")) as FamilyData;
 
