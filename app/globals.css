@@ -95,3 +95,11 @@ label.radio{flex-direction:row;align-items:center;gap:8px;font-size:15px;font-we
 .results .none{padding:12px;color:var(--muted);font-size:14px}
 @media(min-width:768px){.searchbar{max-width:420px;border-top:0;background:transparent;position:absolute;top:8px;left:50%;transform:translateX(-50%);width:420px;padding:0;margin-top:62px}.searchbar input{background:#fff;box-shadow:var(--shadow)}.results{left:0;right:0}}
 .photo-btn{border:0;background:none;padding:0;cursor:zoom-in;border-radius:50%}
+.photo-field{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:var(--muted)}
+.photo-field small{font-weight:400}
+.photo-row{display:flex;align-items:center;gap:14px;padding:10px 12px;background:var(--soft);border-radius:12px}
+.photo-prev{width:56px;height:56px;border-radius:50%;overflow:hidden;background:#fff;display:inline-flex;align-items:center;justify-content:center;color:var(--muted);flex:none}
+.photo-prev img{width:100%;height:100%;object-fit:cover}
+.photo-actions{display:flex;gap:8px;flex-wrap:wrap}
+.photo-actions .btn{height:40px}
+.photo-actions .btn.soft{background:#fff}

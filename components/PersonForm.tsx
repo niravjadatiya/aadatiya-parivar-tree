@@ -1,5 +1,5 @@
 "use client";
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import type { Lang } from "@/config/site";
 import type { Person, Relation } from "@/lib/types";
 import { getT } from "@/lib/i18n";
@@ -27,6 +27,13 @@ export default function PersonForm({ form, person, target, lang, onClose, onDone
   const [pending, start] = useTransition();
   const [file, setFile] = useState<File | null>(null);
   const [removeIt, setRemoveIt] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [preview, setPreview] = useState<string | null>(person?.photo ?? null);
+  useEffect(() => {
+    if (!file) { setPreview(removeIt ? null : person?.photo ?? null); return; }
+    const u = URL.createObjectURL(file); setPreview(u);
+    return () => URL.revokeObjectURL(u);
+  }, [file, removeIt, person?.photo]);
   const rel = form.mode === "add" ? form.relation : null;
   const relLabel = rel === "child" ? t.addChild : rel === "spouse" ? t.addSpouse : rel === "parent" ? t.addParent : rel === "sibling" ? t.addSibling : t.editTitle;
   const defaultGender = person?.gender ?? (rel === "spouse" && target ? (target.gender === "male" ? "female" : "male") : "male");
@@ -64,12 +71,17 @@ export default function PersonForm({ form, person, target, lang, onClose, onDone
         <h2>{relLabel}{target && <small> {t.relationTo} {target.name.en.split(" ")[0]}</small>}</h2>
         <label>{t.nameEn}<input name="nameEn" required autoFocus defaultValue={person?.name.en ?? ""} placeholder={surname ? `Firstname ${surname}` : ""} /></label>
         <label>{t.nameGu} <small>({t.optional})</small><input name="nameGu" defaultValue={person?.name.gu ?? ""} placeholder={surnameGu ? `નામ ${surnameGu}` : ""} /></label>
-        <label>Photo <small>({t.optional})</small>
-          <input type="file" accept="image/*" onChange={(e) => { setFile(e.target.files?.[0] ?? null); setRemoveIt(false); }} />
-        </label>
-        {person?.photo && !file && (
-          <label className="radio"><input type="checkbox" checked={removeIt} onChange={(e) => setRemoveIt(e.target.checked)} />Remove current photo</label>
-        )}
+        <div className="photo-field">
+          <span className="lbl">Photo <small>({t.optional})</small></span>
+          <div className="photo-row">
+            <span className="photo-prev">{preview ? <img src={preview} alt="" /> : <svg aria-hidden width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="14" rx="3" /><circle cx="12" cy="12" r="3.5" /></svg>}</span>
+            <div className="photo-actions">
+              <button type="button" className="btn soft" onClick={() => fileRef.current?.click()}>{preview ? "Change photo" : "Choose photo"}</button>
+              {preview && <button type="button" className="btn danger" onClick={() => { setFile(null); setRemoveIt(!!person?.photo); if (fileRef.current) fileRef.current.value = ""; }}>Remove</button>}
+            </div>
+            <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => { setFile(e.target.files?.[0] ?? null); setRemoveIt(false); }} />
+          </div>
+        </div>
         <fieldset>
           <legend>{t.gender}</legend>
           <label className="radio"><input type="radio" name="gender" value="male" defaultChecked={defaultGender === "male"} />{t.male}</label>
