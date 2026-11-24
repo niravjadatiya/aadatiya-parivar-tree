@@ -20,9 +20,9 @@ type FormState = { mode: "add"; relation: Relation; targetId: string } | { mode:
 function Avatar({ p, size = 44, ring = false }: { p: Person; size?: number; ring?: boolean }) {
   const f = p.gender === "female";
   return (
-    <span className="avatar" style={{ width: size, height: size, background: f ? "#F0DCD2" : "#E7E0D3", outline: ring ? "2px solid var(--accent)" : undefined }}>
+    <span className="avatar" style={{ width: size, height: size, background: f ? "#F9D5E3" : "#D4E4F7", outline: ring ? "2px solid var(--accent)" : undefined }}>
       {p.photo ? <img src={p.photo} alt="" width={size} height={size} /> : (
-        <svg aria-hidden width={size} height={size} viewBox="0 0 44 44"><circle cx="22" cy="17" r="8" fill={f ? "#C9A89A" : "#B8AE9D"} /><path d="M6 44c0-12 7-18 16-18s16 6 16 18z" fill={f ? "#C9A89A" : "#B8AE9D"} /></svg>
+        <svg aria-hidden width={size} height={size} viewBox="0 0 44 44"><circle cx="22" cy="17" r="8" fill={f ? "#E58BB0" : "#7FAAD9"} /><path d="M6 44c0-12 7-18 16-18s16 6 16 18z" fill={f ? "#E58BB0" : "#7FAAD9"} /></svg>
       )}
     </span>
   );
