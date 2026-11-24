@@ -11,19 +11,22 @@ const file = () => path.resolve(process.cwd(), site.dataFile);
 let queue: Promise<unknown> = Promise.resolve();
 
 // Storage: Vercel Blob when BLOB_READ_WRITE_TOKEN is set (hosted), else the local JSON file (dev/VPS).
-const useBlob = () => !!process.env.BLOB_READ_WRITE_TOKEN;
+const blobToken = () =>
+  process.env.BLOB_READ_WRITE_TOKEN ||
+  Object.entries(process.env).find(([k, v]) => k.endsWith("READ_WRITE_TOKEN") && v)?.[1];
+const useBlob = () => !!blobToken();
 const BLOB_NAME = "family.json";
 const seed = async () => JSON.parse(await fs.readFile(path.resolve(process.cwd(), "data/family.json"), "utf8")) as FamilyData;
 
 async function writeBlob(data: FamilyData) {
   await put(BLOB_NAME, JSON.stringify(data, null, 2), {
-    access: "private", addRandomSuffix: false, allowOverwrite: true, contentType: "application/json",
+    token: blobToken(), access: "private", addRandomSuffix: false, allowOverwrite: true, contentType: "application/json",
   });
 }
 
 export async function readData(): Promise<FamilyData> {
   if (useBlob()) {
-    const res = await get(BLOB_NAME, { access: "private", useCache: false });
+    const res = await get(BLOB_NAME, { token: blobToken(), access: "private", useCache: false });
     if (!res || res.statusCode !== 200) { const d = await seed(); await writeBlob(d); return d; }
     return JSON.parse(await new Response(res.stream).text()) as FamilyData;
   }
