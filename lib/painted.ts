@@ -87,6 +87,7 @@ export function paintTree(roots: Unit[], lang: Lang, rootLabel: string) {
   function branch(start: Pt, ang: number, len: number, w0: number, d: number, u: Unit, text: string, kids: Unit[], inAng = 0): void {
     const rnd = rngFor(u.id);
     const trunk = d < 0;
+    if (!trunk) len = Math.min(340, Math.max(len, text.length * 9.6)); // long enough for the name
     // arch upward: the branch bends toward vertical as it grows (like a bough)
     const lean = kids.length === 1 && kids[0].children.length ? -1 : 0; // trunk leans toward its only branch so they join smoothly
     const aEnd = trunk ? lean * 0 : ang * (0.6 + rnd() * 0.12);
@@ -98,7 +99,7 @@ export function paintTree(roots: Unit[], lang: Lang, rootLabel: string) {
     const p2: Pt = [p3[0] - dir(aEnd)[0] * len * 0.34, p3[1] - dir(aEnd)[1] * len * 0.34];
     const pts = bez(p0, p1, p2, p3);
     const end = pts[pts.length - 1];
-    const w1 = trunk ? 84 : Math.max(5, w0 * 0.58), flare = trunk ? 0.6 : 0.3, decay = trunk ? 7 : 11;
+    const w1 = trunk ? 84 : Math.max(16, w0 * 0.66), flare = trunk ? 0.6 : 0.3, decay = trunk ? 7 : 11;
     pts.forEach((p, i) => ext(p[0], p[1], i === 0 ? w0 : w0 * 0.4));
 
     const pid = esc(u.primary.id);
@@ -111,8 +112,13 @@ export function paintTree(roots: Unit[], lang: Lang, rootLabel: string) {
     if (text) {
       const lid = "p" + uid++, lr = p3[0] >= p0[0], ps = lr ? pts : pts.slice().reverse();
       defs += `<path id="${lid}" d="${polyline(ps)}"/>`;
-      const approx = len * 0.9, fs = Math.max(10, Math.min(trunk ? 22 : 15, approx / (text.length * 0.55)));
-      labels += `<text data-pid="${pid}" style="cursor:pointer" font-size="${f(fs)}" fill="#FBEFE3" font-weight="700" stroke="${BARK_DARK}" stroke-width="2.4" paint-order="stroke" stroke-linejoin="round"><textPath href="#${lid}" startOffset="50%" text-anchor="middle" dy="${f(fs * 0.35)}">${esc(text)}</textPath></text>`;
+      // font fits the branch thickness, and the name stays in the middle ~70% so it never runs into a junction
+      const wMid = widthAt(w0, w1, 0.5, flare, decay);
+      let fs = Math.min(trunk ? 24 : 16, Math.max(10, wMid * 0.62));
+      const room = len * 0.7, need = text.length * fs * 0.56;
+      if (need > room) fs = Math.max(9, room / (text.length * 0.56));
+      const mid = lr ? 55 : 45; // text runs along the path; after reversal the same visual spot is mirrored
+      labels += `<text data-pid="${pid}" style="cursor:pointer" font-size="${f(fs)}" fill="#FBEFE3" font-weight="700" stroke="${BARK_DARK}" stroke-width="2.4" paint-order="stroke" stroke-linejoin="round"><textPath href="#${lid}" startOffset="${mid}%" text-anchor="middle" dy="${f(fs * 0.35)}">${esc(text)}</textPath></text>`;
     }
 
     // foliage grows from the edge of the outer bough, on stems, pointing outward and toward the tip
@@ -141,7 +147,7 @@ export function paintTree(roots: Unit[], lang: Lang, rootLabel: string) {
       const ka = aEnd + center + (rnd() - 0.5) * 8;
       if (k.children.length) {
         const dn = dir(aEnd), s2: Pt = [end[0] - dn[0] * 1, end[1] - dn[1] * 1];
-        branch(s2, ka, Math.max(140, len * (kids.length === 1 ? 0.84 : 0.92)), Math.max(9, w1 / (1 + 0.3)), d + 1, k, label(k), k.children, aEnd);
+        branch(s2, ka, Math.max(140, len * (kids.length === 1 ? 0.84 : 0.92)), Math.max(22, w1 / (1 + 0.3)), d + 1, k, label(k), k.children, aEnd);
       } else {
         const tl = 30 + rnd() * 14, sd = dir(ka), tip: Pt = [end[0] + sd[0] * tl, end[1] + sd[1] * tl];
         const tw = bez(end, [end[0] + sd[0] * tl * 0.4, end[1] + sd[1] * tl * 0.4 - 3], [tip[0] - sd[0] * tl * 0.3, tip[1] - sd[1] * tl * 0.3 + 3], tip, 8);
