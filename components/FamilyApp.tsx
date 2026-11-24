@@ -169,6 +169,16 @@ export default function FamilyApp({ people, isAdmin, familyName, defaultLang, la
             {isAdmin && <span className="chip-admin">{t.adminMode}</span>}
           </p>
         </div>
+        <div className="searchbar">
+          <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t.search} aria-label={t.search} />
+          {q.trim() && (
+            <ul className="results">
+              {results.length ? results.map((r) => (
+                <li key={r.id}><button onClick={() => pick(r)}><Avatar p={r} size={32} /><span>{fullName(r, lang)}{r.birth ? <small> · {formatDate(r.birth, lang)}</small> : null}</span></button></li>
+              )) : <li className="none">{t.noResults}</li>}
+            </ul>
+          )}
+        </div>
         <div className="top-actions">
           {languages.length > 1 && (
             <div className="seg" role="group" aria-label="Language">
@@ -179,17 +189,6 @@ export default function FamilyApp({ people, isAdmin, familyName, defaultLang, la
           {isAdmin && <button className="btn soft hide-sm" onClick={logout}>{t.signOut}</button>}
         </div>
       </header>
-
-      <div className="searchbar">
-        <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t.search} aria-label={t.search} />
-        {q.trim() && (
-          <ul className="results">
-            {results.length ? results.map((r) => (
-              <li key={r.id}><button onClick={() => pick(r)}><Avatar p={r} size={32} /><span>{fullName(r, lang)}{r.birth ? <small> · {formatDate(r.birth, lang)}</small> : null}</span></button></li>
-            )) : <li className="none">{t.noResults}</li>}
-          </ul>
-        )}
-      </div>
 
       <div className="stage">
         <div className="viewport" ref={vp} onPointerDown={onPointerDown} onClickCapture={(e) => { if (moved.current) { e.stopPropagation(); e.preventDefault(); moved.current = false; } }}>
