@@ -207,7 +207,7 @@ export default function FamilyApp({ people, isAdmin, familyName, defaultLang, la
                   <button className="unit-main" onClick={() => setSelectedId(u.primary.id)} aria-label={label}>
                     <span className="avatars">
                       <Avatar p={u.primary} />
-                      {u.spouse && <span style={{ marginLeft: -12 }}><Avatar p={u.spouse} /></span>}
+                      {u.spouse && <span style={{ marginLeft: -12 }} role="button" aria-label={fullName(u.spouse, lang)} onClick={(e) => { e.stopPropagation(); setSelectedId(u.spouse!.id); }}><Avatar p={u.spouse} /></span>}
                     </span>
                     <span className="unit-text"><b>{label}</b><small>{personLine(u.primary)}</small></span>
                   </button>
@@ -245,7 +245,7 @@ export default function FamilyApp({ people, isAdmin, familyName, defaultLang, la
           <dl>
             <div><dt>{t.born}</dt><dd>{formatDate(sel.birth, lang) || "—"}</dd></div>
             {sel.death && <div><dt>{t.died}</dt><dd>{formatDate(sel.death, lang)}</dd></div>}
-            <div><dt>{t.spouse}</dt><dd>{selSpouse ? `${shortName(selSpouse, lang)}${selSpouse.birth ? ` (${formatDate(selSpouse.birth, lang)})` : ""}` : t.none}</dd></div>
+            <div><dt>{t.spouse}</dt><dd>{selSpouse ? <a href="#" onClick={(e) => { e.preventDefault(); setSelectedId(selSpouse.id); }}>{`${shortName(selSpouse, lang)}${selSpouse.birth ? ` (${formatDate(selSpouse.birth, lang)})` : ""}`}</a> : t.none}</dd></div>
             <div><dt>{t.parents}</dt><dd>{selParents.length ? selParents.map((p) => shortName(p, lang)).join(" & ") : t.none}</dd></div>
             <div><dt>{t.children}</dt><dd>{selChildren.length ? selChildren.map((p) => shortName(p, lang)).join(", ") : t.none}</dd></div>
           </dl>
