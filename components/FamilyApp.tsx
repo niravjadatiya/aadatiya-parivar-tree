@@ -14,6 +14,8 @@ type Props = {
   people: Person[]; isAdmin: boolean;
   familyName: { en: string; gu: string };
   defaultLang: Lang; languages: Lang[];
+  contact: { name: string; phone: string; display: string };
+  credit: { text: string; url: string };
 };
 type FormState = { mode: "add"; relation: Relation; targetId: string } | { mode: "edit"; id: string } | null;
 
@@ -28,7 +30,7 @@ function Avatar({ p, size = 44, ring = false }: { p: Person; size?: number; ring
   );
 }
 
-export default function FamilyApp({ people, isAdmin, familyName, defaultLang, languages }: Props) {
+export default function FamilyApp({ people, isAdmin, familyName, defaultLang, languages, contact, credit }: Props) {
   const router = useRouter();
   const [lightbox, setLightbox] = useState<string | null>(null);
   const [, startT] = useTransition();
@@ -268,6 +270,17 @@ export default function FamilyApp({ people, isAdmin, familyName, defaultLang, la
           )}
         </aside>
       )}
+
+      <footer className="foot">
+        <span>
+          {lang === "gu" ? "ફોટા કે માહિતી ઉમેરવા/સુધારવા સંપર્ક કરો" : "To add or update photos and details, contact"} <b>{contact.name}</b>
+        </span>
+        <span className="foot-links">
+          <a href={`tel:${contact.phone}`}>{lang === "gu" ? "કૉલ" : "Call"} {contact.display}</a>
+          <a href={`https://wa.me/${contact.phone.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer">WhatsApp</a>
+        </span>
+        <span className="foot-credit">{lang === "gu" ? "❤️ સાથે વિકસાવ્યું" : "Developed with ❤️ by"} <a href={credit.url} target="_blank" rel="noopener noreferrer">{credit.text}</a></span>
+      </footer>
 
       {lightbox && (
         <div className="modal" role="dialog" aria-label="Photo" onClick={() => setLightbox(null)}>

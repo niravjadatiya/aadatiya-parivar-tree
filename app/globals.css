@@ -103,3 +103,7 @@ label.radio{flex-direction:row;align-items:center;gap:8px;font-size:15px;font-we
 .photo-actions{display:flex;gap:8px;flex-wrap:wrap}
 .photo-actions .btn{height:40px}
 .photo-actions .btn.soft{background:#fff}
+.foot{display:flex;align-items:center;justify-content:center;gap:6px 16px;flex-wrap:wrap;padding:8px 16px;background:#fff;border-top:1px solid rgba(43,33,24,.08);font-size:12px;color:var(--muted);z-index:5;text-align:center}
+.foot a{color:var(--accent);font-weight:600;text-decoration:none}
+.foot-links{display:flex;gap:12px}
+.foot-links a{padding:4px 0}

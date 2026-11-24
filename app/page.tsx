@@ -7,5 +7,5 @@ export const dynamic = "force-dynamic";
 
 export default async function Home() {
   const [data, admin] = await Promise.all([readData(), isAdmin()]);
-  return <FamilyApp people={data.people} isAdmin={admin} familyName={site.familyName} defaultLang={site.defaultLang} languages={site.languages} />;
+  return <FamilyApp people={data.people} isAdmin={admin} familyName={site.familyName} defaultLang={site.defaultLang} languages={site.languages} contact={site.contact} credit={site.credit} />;
 }
