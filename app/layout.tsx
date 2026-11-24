@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/" },
   openGraph: { type: "website", url, siteName: site.familyName.en, title, description, locale: "en_IN", alternateLocale: ["gu_IN"] },
   twitter: { card: "summary_large_image", title, description },
-  robots: { index: true, follow: true },
+  robots: { index: false, follow: false, nocache: true, googleBot: { index: false, follow: false, noimageindex: true } },
 };
 export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#F7F5F2" };
 
