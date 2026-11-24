@@ -71,7 +71,7 @@ dd{margin:0;text-align:right}
 .sheet h2 small{font-weight:400;color:var(--muted);font-size:14px}
 label{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600;color:var(--muted)}
 label small{font-weight:400}
-input:not([type=radio]){height:48px;border:1px solid var(--line);border-radius:12px;background:#FBF9F5;padding:0 14px;font-size:16px;color:var(--ink);width:100%}
+input:not([type=radio]):not([type=checkbox]){height:48px;border:1px solid var(--line);border-radius:12px;background:#FBF9F5;padding:0 14px;font-size:16px;color:var(--ink);width:100%}
 fieldset{border:0;padding:0;margin:0;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 legend{font-size:13px;font-weight:600;color:var(--muted);margin-bottom:6px;padding:0}
 label.radio{flex-direction:row;align-items:center;gap:8px;font-size:15px;font-weight:500;color:var(--ink);min-height:44px;padding:0 14px;background:var(--soft);border-radius:12px}
@@ -126,3 +126,5 @@ label.radio{flex-direction:row;align-items:center;gap:8px;font-size:15px;font-we
 .links{display:flex;flex-wrap:wrap;gap:4px 14px}
 .links a,.contact a{color:var(--accent);font-weight:600;text-decoration:none;word-break:break-all;min-height:28px;display:inline-flex;align-items:center}
 .lock{font-style:normal;color:var(--muted);font-size:12px;font-weight:500}
+input[type=checkbox],input[type=radio]{width:20px;height:20px;flex:none;accent-color:var(--accent);margin:0}
+.sheet>*,.biz>*{flex-shrink:0}
