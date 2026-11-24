@@ -53,7 +53,7 @@ export default function PersonForm({ form, person, target, lang, onClose, onDone
             nameEn: String(f.get("nameEn") ?? ""), nameGu: String(f.get("nameGu") ?? ""),
             gender: (f.get("gender") === "female" ? "female" : "male") as "male" | "female",
             birth: String(f.get("birth") ?? "").trim() || undefined, death: String(f.get("death") ?? "").trim() || undefined,
-            phone: String(f.get("phone") ?? "").trim() || undefined, phonePublic: f.get("phonePublic") === "on",
+            city: String(f.get("city") ?? "").trim() || undefined, phone: String(f.get("phone") ?? "").trim() || undefined, phonePublic: f.get("phonePublic") === "on",
             businesses: biz,
           };
           setErr("");
@@ -102,6 +102,8 @@ export default function PersonForm({ form, person, target, lang, onClose, onDone
             <label>{t.birth}<input name="birth" inputMode="numeric" placeholder="YYYY-MM-DD" defaultValue={person?.birth ?? ""} /></label>
             <label>{t.death}<input name="death" inputMode="numeric" placeholder="YYYY-MM-DD" defaultValue={person?.death ?? ""} /></label>
           </div>
+
+          <label>{t.city}<input name="city" maxLength={60} placeholder="Surat" defaultValue={person?.city ?? ""} /></label>
 
           <div className="pf-sec-row">
             <h3 className="pf-sec">{t.phone}</h3>

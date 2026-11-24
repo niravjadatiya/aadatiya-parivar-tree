@@ -84,10 +84,12 @@ function clean(input: PersonInput) {
   for (const v of [input.birth, input.death]) {
     if (v && !DATE.test(v)) throw new Error("Dates must look like 2018, 2018-06 or 2018-06-27");
   }
+  const city = input.city?.trim().slice(0, 60);
   const phone = input.phone?.trim();
   if (phone && !PHONE.test(phone)) throw new Error("Invalid phone number");
   const businesses = (input.businesses ?? []).slice(0, 10).map(cleanBusiness);
   return {
+    ...(city ? { city } : {}),
     ...(phone ? { phone, ...(input.phonePublic ? { phonePublic: true } : {}) } : {}),
     ...(businesses.length ? { businesses } : {}),
     name: { en: nameEn, ...(input.nameGu?.trim() ? { gu: input.nameGu.trim() } : {}) },
@@ -128,6 +130,7 @@ export function updatePerson(id: string, input: PersonInput) {
     p.gender = c.gender;
     if (c.birth) p.birth = c.birth; else delete p.birth;
     if (c.death) p.death = c.death; else delete p.death;
+    if (c.city) p.city = c.city; else delete p.city;
     if (c.phone) p.phone = c.phone; else delete p.phone;
     if (c.phonePublic) p.phonePublic = true; else delete p.phonePublic;
     if (c.businesses) p.businesses = c.businesses; else delete p.businesses;

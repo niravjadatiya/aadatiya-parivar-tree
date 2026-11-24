@@ -271,6 +271,7 @@ export default function FamilyApp({ people, isAdmin, familyName, defaultLang, la
           <dl>
             <div><dt>{t.born}</dt><dd>{formatDate(sel.birth, lang) || "—"}</dd></div>
             {sel.death && <div><dt>{t.died}</dt><dd>{formatDate(sel.death, lang)}</dd></div>}
+            {sel.city && <div><dt>{t.city}</dt><dd>{sel.city}</dd></div>}
             <div><dt>{t.spouse}</dt><dd>{selSpouse ? <a href="#" onClick={(e) => { e.preventDefault(); setSelectedId(selSpouse.id); }}>{`${shortName(selSpouse, lang)}${selSpouse.birth ? ` (${formatDate(selSpouse.birth, lang)})` : ""}`}</a> : t.none}</dd></div>
             <div><dt>{t.parents}</dt><dd>{selParents.length ? selParents.map((p) => shortName(p, lang)).join(" & ") : t.none}</dd></div>
             <div><dt>{t.children}</dt><dd>{selChildren.length ? selChildren.map((p) => shortName(p, lang)).join(", ") : t.none}</dd></div>
