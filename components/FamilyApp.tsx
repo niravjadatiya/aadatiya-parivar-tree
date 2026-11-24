@@ -151,7 +151,11 @@ export default function FamilyApp({ people, isAdmin, familyName, defaultLang, la
   };
 
   const rootNode = nodes[0];
-  const personLine = (p: Person) => formatDate(p.birth, lang);
+  const yr = (p: Person) => p.birth?.slice(0, 4);
+  const personLine = (u: { primary: Person; spouse?: Person }) =>
+    u.spouse
+      ? [u.primary, u.spouse].filter((x) => yr(x)).map((x) => `${shortName(x, lang)} ${yr(x)}`).join(" · ")
+      : formatDate(u.primary.birth, lang);
 
   return (
     <div className="app">
@@ -210,7 +214,7 @@ export default function FamilyApp({ people, isAdmin, familyName, defaultLang, la
                       <Avatar p={u.primary} />
                       {u.spouse && <span style={{ marginLeft: -12 }} role="button" aria-label={fullName(u.spouse, lang)} onClick={(e) => { e.stopPropagation(); setSelectedId(u.spouse!.id); }}><Avatar p={u.spouse} /></span>}
                     </span>
-                    <span className="unit-text"><b>{label}</b><small>{personLine(u.primary)}</small></span>
+                    <span className="unit-text"><b>{label}</b><small>{personLine(u)}</small></span>
                   </button>
                   {u.children.length > 0 && (
                     <button className={"toggle" + (open ? "" : " badge")} onClick={() => toggle(u.id)} aria-expanded={open} aria-label={open ? t.collapse : `${t.expand} (${count})`}>
