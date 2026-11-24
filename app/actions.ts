@@ -19,8 +19,19 @@ export async function loginAction(username: string, password: string): Promise<R
   return { ok: true };
 }
 export async function logoutAction() { await endSession(); revalidatePath("/"); }
-export async function addPersonAction(relation: Relation, targetId: string, input: PersonInput): Promise<Result> {
-  return guard(() => store.addPerson(relation, targetId, input));
+export async function addPersonAction(relation: Relation, targetId: string, input: PersonInput): Promise<Result & { id?: string }> {
+  let id: string | undefined;
+  const r = await guard(async () => { id = await store.addPerson(relation, targetId, input); });
+  return r.ok ? { ok: true, id } : r;
+}
+export async function setPhotoAction(id: string, form: FormData): Promise<Result> {
+  const file = form.get("photo");
+  if (!(file instanceof File) || file.size === 0) return { ok: false, error: "No photo" };
+  if (file.size > 4_000_000) return { ok: false, error: "Photo too large" };
+  return guard(async () => store.setPhoto(id, Buffer.from(await file.arrayBuffer())));
+}
+export async function removePhotoAction(id: string): Promise<Result> {
+  return guard(() => store.removePhoto(id));
 }
 export async function updatePersonAction(id: string, input: PersonInput): Promise<Result> {
   return guard(() => store.updatePerson(id, input));

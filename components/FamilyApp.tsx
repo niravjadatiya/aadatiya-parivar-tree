@@ -17,11 +17,11 @@ type Props = {
 };
 type FormState = { mode: "add"; relation: Relation; targetId: string } | { mode: "edit"; id: string } | null;
 
-function Avatar({ p, size = 44, ring = false }: { p: Person; size?: number; ring?: boolean }) {
+function Avatar({ p, size = 44, ring = false, full = false }: { p: Person; size?: number; ring?: boolean; full?: boolean }) {
   const f = p.gender === "female";
   return (
     <span className="avatar" style={{ width: size, height: size, background: f ? "#F9D5E3" : "#D4E4F7", outline: ring ? "2px solid var(--accent)" : undefined }}>
-      {p.photo ? <img src={p.photo} alt="" width={size} height={size} /> : (
+      {p.photo ? <img src={full ? p.photo : `${p.photo}&s=thumb`} alt="" width={size} height={size} /> : (
         <svg aria-hidden width={size} height={size} viewBox="0 0 44 44"><circle cx="22" cy="17" r="8" fill={f ? "#E58BB0" : "#7FAAD9"} /><path d="M6 44c0-12 7-18 16-18s16 6 16 18z" fill={f ? "#E58BB0" : "#7FAAD9"} /></svg>
       )}
     </span>
@@ -30,6 +30,7 @@ function Avatar({ p, size = 44, ring = false }: { p: Person; size?: number; ring
 
 export default function FamilyApp({ people, isAdmin, familyName, defaultLang, languages }: Props) {
   const router = useRouter();
+  const [lightbox, setLightbox] = useState<string | null>(null);
   const [, startT] = useTransition();
   const [lang, setLang] = useState<Lang>(defaultLang);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -235,7 +236,9 @@ export default function FamilyApp({ people, isAdmin, familyName, defaultLang, la
         <aside className="panel" aria-label="Person details">
           <button className="close" aria-label={t.close} onClick={() => setSelectedId(null)}>×</button>
           <div className="who">
-            <Avatar p={sel} size={56} />
+            {sel.photo ? (
+              <button className="photo-btn" aria-label="View photo" onClick={() => setLightbox(sel.photo!)}><Avatar p={sel} size={56} /></button>
+            ) : <Avatar p={sel} size={56} />}
             <div>
               <h2>{fullName(sel, lang)}</h2>
               {sel.name.gu && lang === "en" && <p>{sel.name.gu}</p>}
@@ -260,6 +263,12 @@ export default function FamilyApp({ people, isAdmin, familyName, defaultLang, la
             </div>
           )}
         </aside>
+      )}
+
+      {lightbox && (
+        <div className="modal" role="dialog" aria-label="Photo" onClick={() => setLightbox(null)}>
+          <img src={lightbox} alt="" style={{ maxWidth: "94vw", maxHeight: "90vh", borderRadius: 12, background: "#fff" }} />
+        </div>
       )}
 
       {form && (
