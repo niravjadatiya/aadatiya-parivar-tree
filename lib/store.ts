@@ -34,6 +34,10 @@ export async function readData(): Promise<FamilyData> {
 }
 
 async function writeData(data: FamilyData) {
+  if (!useBlob() && process.env.VERCEL) {
+    const names = Object.keys(process.env).filter((k) => /blob|store/i.test(k));
+    throw new Error(`No Blob token in this deployment (env=${process.env.VERCEL_ENV}, commit=${(process.env.VERCEL_GIT_COMMIT_SHA || "").slice(0, 7)}). Blob-like env names: ${names.join(", ") || "none"}`);
+  }
   if (useBlob()) return writeBlob(data);
   const tmp = file() + ".tmp";
   await fs.writeFile(tmp, JSON.stringify(data, null, 2) + "\n", "utf8");
