@@ -122,40 +122,33 @@ export function deletePerson(id: string) {
   });
 }
 
-// ---- Photos: stored as WebP (full ~1200px + thumbnail ~256px) in Blob, or data/photos locally ----
+// ---- Photos: one WebP (max 800px) per person, in Blob (private) or data/photos locally ----
 const photoDir = () => path.join(path.dirname(file()), "photos");
-const photoKey = (id: string, size: "full" | "thumb") => `photos/${id}-${size}.webp`;
+const photoKey = (id: string) => `photos/${id}.webp`;
 export const validId = (id: string) => /^[a-z0-9-]{4,40}$/i.test(id);
 
-async function putPhotoFile(id: string, size: "full" | "thumb", buf: Buffer) {
-  if (useBlob()) {
-    await put(photoKey(id, size), buf, { token: blobToken(), access: "private", addRandomSuffix: false, allowOverwrite: true, contentType: "image/webp" });
-  } else {
-    await fs.mkdir(photoDir(), { recursive: true });
-    await fs.writeFile(path.join(photoDir(), `${id}-${size}.webp`), buf);
-  }
-}
-
-export async function readPhoto(id: string, size: "full" | "thumb"): Promise<Buffer | null> {
+export async function readPhoto(id: string): Promise<Buffer | null> {
   if (!validId(id)) return null;
   try {
     if (useBlob()) {
-      const res = await get(photoKey(id, size), { token: blobToken(), access: "private" });
+      const res = await get(photoKey(id), { token: blobToken(), access: "private" });
       if (!res || res.statusCode !== 200) return null;
       return Buffer.from(await new Response(res.stream).arrayBuffer());
     }
-    return await fs.readFile(path.join(photoDir(), `${id}-${size}.webp`));
+    return await fs.readFile(path.join(photoDir(), `${id}.webp`));
   } catch { return null; }
 }
 
 export async function setPhoto(id: string, image: Buffer) {
   if (!validId(id)) throw new Error("Bad id");
   const sharp = (await import("sharp")).default;
-  const base = () => sharp(image, { failOn: "none" }).rotate();
-  const full = await base().resize(1200, 1200, { fit: "inside", withoutEnlargement: true }).webp({ quality: 80 }).toBuffer();
-  const thumb = await base().resize(256, 256, { fit: "cover", position: "attention" }).webp({ quality: 78 }).toBuffer();
-  await putPhotoFile(id, "full", full);
-  await putPhotoFile(id, "thumb", thumb);
+  const webp = await sharp(image, { failOn: "none" }).rotate().resize(800, 800, { fit: "inside", withoutEnlargement: true }).webp({ quality: 80 }).toBuffer();
+  if (useBlob()) {
+    await put(photoKey(id), webp, { token: blobToken(), access: "private", addRandomSuffix: false, allowOverwrite: true, contentType: "image/webp" });
+  } else {
+    await fs.mkdir(photoDir(), { recursive: true });
+    await fs.writeFile(path.join(photoDir(), `${id}.webp`), webp);
+  }
   await mutate((d) => {
     const p = d.people.find((x) => x.id === id);
     if (!p) throw new Error("Person not found");
