@@ -103,9 +103,11 @@ export default function PersonForm({ form, person, target, lang, onClose, onDone
             <label>{t.death}<input name="death" inputMode="numeric" placeholder="YYYY-MM-DD" defaultValue={person?.death ?? ""} /></label>
           </div>
 
-          <h3 className="pf-sec">{t.phone}</h3>
+          <div className="pf-sec-row">
+            <h3 className="pf-sec">{t.phone}</h3>
+            <label className="pf-mini"><span>{t.showPublic}</span><input type="checkbox" className="sw" name="phonePublic" defaultChecked={!!person?.phonePublic} /></label>
+          </div>
           <label className="pf-plain"><input name="phone" type="tel" inputMode="tel" aria-label={t.phone} placeholder="+91 98765 43210" defaultValue={person?.phone ?? ""} /></label>
-          <label className="pf-switch"><span>{t.showPublic}</span><input type="checkbox" className="sw" name="phonePublic" defaultChecked={!!person?.phonePublic} /></label>
 
           <h3 className="pf-sec">{t.businesses}</h3>
           {biz.map((b, i) => (

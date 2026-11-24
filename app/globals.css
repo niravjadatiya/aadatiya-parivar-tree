@@ -164,3 +164,6 @@ input[type=checkbox].sw:checked::after{transform:translateX(18px)}
 .pf-biz-top{display:flex;align-items:center;justify-content:space-between;font-size:14px}
 .pf-biz .pf-switch{background:var(--soft)}
 .pf-add{height:44px;border:1.5px dashed var(--accent);border-radius:12px;background:transparent;color:var(--accent);font-weight:600;font-size:14px}
+.pf-sec-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px}
+.pf-sec-row .pf-sec{margin:0}
+.pf-mini{flex-direction:row!important;align-items:center;gap:10px!important;font-size:13px!important;font-weight:500;color:var(--ink)}
