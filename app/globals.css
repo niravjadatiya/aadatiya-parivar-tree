@@ -171,3 +171,24 @@ input[type=checkbox].sw:checked::after{transform:translateX(18px)}
 .viewport.painted{background:linear-gradient(#F7DABA,#EDB487);cursor:grab}
 .painted-svg{max-width:none;display:block}
 .painted-svg text{user-select:none;-webkit-user-select:none}
+
+/* compact chrome on phones */
+.foot-short,.credit-short{display:none}
+@media(max-width:767px){
+  .top{padding:8px 12px;gap:8px;align-items:center}
+  .top>div:first-child{flex:1;min-width:0}
+  .top h1{font-size:17px}
+  .top p{font-size:11px;margin-top:0;gap:6px}
+  .top-actions{gap:6px;flex:none}
+  .seg{padding:2px}
+  .seg button{min-width:34px;height:28px;font-size:12px;padding:0 8px}
+  .searchbar input{height:38px;font-size:15px;border-radius:10px;padding:0 12px}
+  .tools{right:8px;bottom:8px;gap:6px}
+  .tools .btn{height:34px;padding:0 11px;font-size:12px;border-radius:10px}
+  .tools .btn.sq{width:34px;padding:0;font-size:18px}
+  .foot{padding:5px 10px calc(5px + env(safe-area-inset-bottom));gap:2px 12px;font-size:11px;flex-wrap:nowrap;justify-content:space-between}
+  .foot-long,.foot-num,.credit-long{display:none}
+  .foot-short,.credit-short{display:inline}
+  .foot-links{gap:10px}
+  .foot-links a{min-height:0;padding:2px 0}
+}

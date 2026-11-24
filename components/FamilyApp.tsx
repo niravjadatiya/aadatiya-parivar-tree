@@ -327,14 +327,15 @@ export default function FamilyApp({ people, isAdmin, familyName, defaultLang, la
       )}
 
       <footer className="foot">
-        <span>
+        <span className="foot-long">
           {lang === "gu" ? "ફોટા કે માહિતી ઉમેરવા/સુધારવા સંપર્ક કરો" : "To add or update photos and details, contact"} <b>{contact.name}</b>
         </span>
+        <span className="foot-short">{lang === "gu" ? "માહિતી સુધારવી છે?" : "Update details?"}</span>
         <span className="foot-links">
-          <a href={`tel:${contact.phone}`}>{lang === "gu" ? "કૉલ" : "Call"} {contact.display}</a>
+          <a href={`tel:${contact.phone}`}>{lang === "gu" ? "કૉલ" : "Call"}<span className="foot-num"> {contact.display}</span></a>
           <a href={`https://wa.me/${contact.phone.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer">WhatsApp</a>
         </span>
-        <span className="foot-credit">{lang === "gu" ? "❤️ સાથે વિકસાવ્યું" : "Developed with ❤️ by"} <a href={credit.url} target="_blank" rel="noopener noreferrer">{credit.text}</a></span>
+        <span className="foot-credit"><span className="credit-long">{lang === "gu" ? "❤️ સાથે વિકસાવ્યું" : "Developed with ❤️ by"} </span><span className="credit-short">❤️ </span><a href={credit.url} target="_blank" rel="noopener noreferrer">{credit.text}</a></span>
       </footer>
 
       {lightbox && (
