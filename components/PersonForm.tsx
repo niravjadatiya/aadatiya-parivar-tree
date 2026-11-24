@@ -45,7 +45,7 @@ export default function PersonForm({ form, person, target, lang, onClose, onDone
   return (
     <div className="modal" role="dialog" aria-modal="true" aria-label={relLabel} onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <form
-        className="sheet"
+        className="sheet pf"
         onSubmit={(e) => {
           e.preventDefault();
           const f = new FormData(e.currentTarget);
@@ -72,49 +72,68 @@ export default function PersonForm({ form, person, target, lang, onClose, onDone
           });
         }}
       >
-        <h2>{relLabel}{target && <small> {t.relationTo} {target.name.en.split(" ")[0]}</small>}</h2>
-        <label>{t.nameEn}<input name="nameEn" required autoFocus defaultValue={person?.name.en ?? ""} placeholder={surname ? `Firstname ${surname}` : ""} /></label>
-        <label>{t.nameGu} <small>({t.optional})</small><input name="nameGu" defaultValue={person?.name.gu ?? ""} placeholder={surnameGu ? `નામ ${surnameGu}` : ""} /></label>
-        <div className="photo-field">
-          <span className="lbl">Photo <small>({t.optional})</small></span>
-          <div className="photo-row">
-            <span className="photo-prev">{preview ? <img src={preview} alt="" /> : <svg aria-hidden width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="14" rx="3" /><circle cx="12" cy="12" r="3.5" /></svg>}</span>
-            <div className="photo-actions">
-              <button type="button" className="btn soft" onClick={() => fileRef.current?.click()}>{preview ? "Change photo" : "Choose photo"}</button>
-              {preview && <button type="button" className="btn danger" onClick={() => { setFile(null); setRemoveIt(!!person?.photo); if (fileRef.current) fileRef.current.value = ""; }}>Remove</button>}
+        <header className="pf-head">
+          <h2>{relLabel}{target && <small> {t.relationTo} {target.name.en.split(" ")[0]}</small>}</h2>
+          <button type="button" className="pf-x" aria-label={t.close} onClick={onClose}>×</button>
+        </header>
+
+        <div className="pf-body">
+          <div className="pf-photo">
+            <button type="button" className="pf-avatar" aria-label="Choose photo" onClick={() => fileRef.current?.click()}>
+              {preview ? <img src={preview} alt="" /> : <svg aria-hidden width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="9" r="4" /><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7" /></svg>}
+              <span className="pf-cam" aria-hidden><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 8h4l2-3h6l2 3h4v11H3z" /><circle cx="12" cy="13" r="3.5" /></svg></span>
+            </button>
+            <div className="pf-photo-links">
+              <button type="button" onClick={() => fileRef.current?.click()}>{preview ? "Change photo" : "Add photo"}</button>
+              {preview && <button type="button" className="danger" onClick={() => { setFile(null); setRemoveIt(!!person?.photo); if (fileRef.current) fileRef.current.value = ""; }}>{t.remove}</button>}
             </div>
             <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => { setFile(e.target.files?.[0] ?? null); setRemoveIt(false); }} />
           </div>
-        </div>
-        <fieldset>
-          <legend>{t.gender}</legend>
-          <label className="radio"><input type="radio" name="gender" value="male" defaultChecked={defaultGender === "male"} />{t.male}</label>
-          <label className="radio"><input type="radio" name="gender" value="female" defaultChecked={defaultGender === "female"} />{t.female}</label>
-        </fieldset>
-        <label>{t.birth} <small>({t.optional})</small><input name="birth" inputMode="numeric" placeholder={t.dateHint} defaultValue={person?.birth ?? ""} /></label>
-        <label>{t.death} <small>({t.optional})</small><input name="death" inputMode="numeric" placeholder={t.dateHint} defaultValue={person?.death ?? ""} /></label>
-        <label>{t.phone} <small>({t.optional})</small><input name="phone" type="tel" inputMode="tel" placeholder="+91 98765 43210" defaultValue={person?.phone ?? ""} /></label>
-        <label className="radio"><input type="checkbox" name="phonePublic" defaultChecked={!!person?.phonePublic} />{t.showPublic}</label>
 
-        <div className="biz-head"><b>{t.businesses}</b><small>({t.optional})</small></div>
-        {biz.map((b, i) => (
-          <div className="biz" key={i}>
-            <label>{t.businessName}<input value={b.name} onChange={(e) => setB(i, { name: e.target.value })} required maxLength={80} /></label>
-            <label>{t.about} <small>({t.optional})</small><input value={b.about ?? ""} onChange={(e) => setB(i, { about: e.target.value })} maxLength={200} /></label>
-            <label>{t.phone} <small>({t.optional})</small><input type="tel" inputMode="tel" value={b.phone ?? ""} onChange={(e) => setB(i, { phone: e.target.value })} /></label>
-            <label>{t.email} <small>({t.optional})</small><input type="email" inputMode="email" value={b.email ?? ""} onChange={(e) => setB(i, { email: e.target.value })} /></label>
-            <label>{t.website} <small>({t.optional})</small><input inputMode="url" placeholder="example.com" value={b.website ?? ""} onChange={(e) => setB(i, { website: e.target.value })} /></label>
-            <label>{t.city} <small>({t.optional})</small><input value={b.city ?? ""} onChange={(e) => setB(i, { city: e.target.value })} maxLength={60} /></label>
-            <label className="radio"><input type="checkbox" checked={!!b.public} onChange={(e) => setB(i, { public: e.target.checked })} />{t.showPublic}</label>
-            <button type="button" className="btn danger" onClick={() => setBiz((l) => l.filter((_, j) => j !== i))}>{t.remove}</button>
+          <label><span>{t.nameEn} <i className="req">*</i></span><input name="nameEn" required autoFocus defaultValue={person?.name.en ?? ""} placeholder={surname ? `Firstname ${surname}` : ""} /></label>
+          <label>{t.nameGu}<input name="nameGu" defaultValue={person?.name.gu ?? ""} placeholder={surnameGu ? `નામ ${surnameGu}` : ""} /></label>
+
+          <div className="pf-seg" role="radiogroup" aria-label={t.gender}>
+            <label className="pf-opt"><input type="radio" name="gender" value="male" defaultChecked={defaultGender === "male"} /><span>{t.male}</span></label>
+            <label className="pf-opt"><input type="radio" name="gender" value="female" defaultChecked={defaultGender === "female"} /><span>{t.female}</span></label>
           </div>
-        ))}
-        {biz.length < 10 && <button type="button" className="btn soft" onClick={() => setBiz((l) => [...l, { name: "" }])}>+ {t.addBusiness}</button>}
-        {err && <p role="alert" className="err">{err}</p>}
-        <div className="row">
-          <button type="button" className="btn soft" onClick={onClose}>{t.cancel}</button>
-          <button className="btn primary" disabled={pending}>{pending ? "…" : t.save}</button>
+
+          <div className="pf-2">
+            <label>{t.birth}<input name="birth" inputMode="numeric" placeholder="YYYY-MM-DD" defaultValue={person?.birth ?? ""} /></label>
+            <label>{t.death}<input name="death" inputMode="numeric" placeholder="YYYY-MM-DD" defaultValue={person?.death ?? ""} /></label>
+          </div>
+
+          <h3 className="pf-sec">{t.phone}</h3>
+          <label className="pf-plain"><input name="phone" type="tel" inputMode="tel" aria-label={t.phone} placeholder="+91 98765 43210" defaultValue={person?.phone ?? ""} /></label>
+          <label className="pf-switch"><span>{t.showPublic}</span><input type="checkbox" className="sw" name="phonePublic" defaultChecked={!!person?.phonePublic} /></label>
+
+          <h3 className="pf-sec">{t.businesses}</h3>
+          {biz.map((b, i) => (
+            <div className="pf-biz" key={i}>
+              <div className="pf-biz-top"><b>{t.businesses} {biz.length > 1 ? i + 1 : ""}</b><button type="button" className="pf-link danger" onClick={() => setBiz((l) => l.filter((_, j) => j !== i))}>{t.remove}</button></div>
+              <label>{t.businessName}<input value={b.name} onChange={(e) => setB(i, { name: e.target.value })} required maxLength={80} /></label>
+              <label>{t.about}<input value={b.about ?? ""} onChange={(e) => setB(i, { about: e.target.value })} maxLength={200} /></label>
+              <div className="pf-2">
+                <label>{t.phone}<input type="tel" inputMode="tel" value={b.phone ?? ""} onChange={(e) => setB(i, { phone: e.target.value })} /></label>
+                <label>{t.email}<input type="email" inputMode="email" value={b.email ?? ""} onChange={(e) => setB(i, { email: e.target.value })} /></label>
+              </div>
+              <div className="pf-2">
+                <label>{t.website}<input inputMode="url" placeholder="example.com" value={b.website ?? ""} onChange={(e) => setB(i, { website: e.target.value })} /></label>
+                <label>{t.city}<input value={b.city ?? ""} onChange={(e) => setB(i, { city: e.target.value })} maxLength={60} /></label>
+              </div>
+              <label className="pf-switch"><span>{t.showPublic}</span><input type="checkbox" className="sw" checked={!!b.public} onChange={(e) => setB(i, { public: e.target.checked })} /></label>
+            </div>
+          ))}
+          {biz.length < 10 && <button type="button" className="pf-add" onClick={() => setBiz((l) => [...l, { name: "" }])}>+ {t.addBusiness}</button>}
         </div>
+
+        <footer className="pf-foot">
+          {err && <p role="alert" className="err">{err}</p>}
+          <div className="row">
+            <button type="button" className="btn soft" onClick={onClose}>{t.cancel}</button>
+            <button className="btn primary" disabled={pending}>{pending ? "…" : t.save}</button>
+          </div>
+        </footer>
       </form>
     </div>
   );
