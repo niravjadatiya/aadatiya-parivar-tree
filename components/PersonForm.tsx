@@ -112,7 +112,10 @@ export default function PersonForm({ form, person, target, lang, onClose, onDone
           <h3 className="pf-sec">{t.businesses}</h3>
           {biz.map((b, i) => (
             <div className="pf-biz" key={i}>
-              <div className="pf-biz-top"><b>{t.businesses} {biz.length > 1 ? i + 1 : ""}</b><button type="button" className="pf-link danger" onClick={() => setBiz((l) => l.filter((_, j) => j !== i))}>{t.remove}</button></div>
+              <div className="pf-biz-top">
+                <b>{t.businesses} {biz.length > 1 ? i + 1 : ""}</b>
+                <label className="pf-mini"><span>{t.showPublic}</span><input type="checkbox" className="sw" checked={!!b.public} onChange={(e) => setB(i, { public: e.target.checked })} /></label>
+              </div>
               <label>{t.businessName}<input value={b.name} onChange={(e) => setB(i, { name: e.target.value })} required maxLength={80} /></label>
               <label>{t.about}<input value={b.about ?? ""} onChange={(e) => setB(i, { about: e.target.value })} maxLength={200} /></label>
               <div className="pf-2">
@@ -123,7 +126,7 @@ export default function PersonForm({ form, person, target, lang, onClose, onDone
                 <label>{t.website}<input inputMode="url" placeholder="example.com" value={b.website ?? ""} onChange={(e) => setB(i, { website: e.target.value })} /></label>
                 <label>{t.city}<input value={b.city ?? ""} onChange={(e) => setB(i, { city: e.target.value })} maxLength={60} /></label>
               </div>
-              <label className="pf-switch"><span>{t.showPublic}</span><input type="checkbox" className="sw" checked={!!b.public} onChange={(e) => setB(i, { public: e.target.checked })} /></label>
+              <button type="button" className="pf-link danger pf-rm" onClick={() => setBiz((l) => l.filter((_, j) => j !== i))}>{t.remove} {t.businesses.toLowerCase()}</button>
             </div>
           ))}
           {biz.length < 10 && <button type="button" className="pf-add" onClick={() => setBiz((l) => [...l, { name: "" }])}>+ {t.addBusiness}</button>}
