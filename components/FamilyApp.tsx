@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import type { Lang } from "@/config/site";
 import type { Person, Relation } from "@/lib/types";
 import PaintedTree from "./PaintedTree";
+import BulkModal from "./BulkModal";
 import { buildUnits, countDescendants, layout, FULL, COMPACT } from "@/lib/tree";
 import type { Node } from "@/lib/tree";
 import { getT } from "@/lib/i18n";
@@ -40,6 +41,7 @@ export default function FamilyApp({ people, isAdmin, familyName, defaultLang, la
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(null);
   const [view, setView] = useState({ x: 0, y: 0, k: 1 });
+  const [bulk, setBulk] = useState(false);
   const [mode, setMode] = useState<"chart" | "painted">("chart");
   useEffect(() => { try { if (localStorage.getItem("view") === "painted") setMode("painted"); } catch {} }, []);
   const pickMode = (m: "chart" | "painted") => { setMode(m); try { localStorage.setItem("view", m); } catch {} };
@@ -189,6 +191,7 @@ export default function FamilyApp({ people, isAdmin, familyName, defaultLang, la
           <p>
             {people.length} {t.members} · {generations} {t.generations}
             {isAdmin && <span className="chip-admin">{t.adminMode}</span>}
+            {isAdmin && <button className="chip-admin chip-btn" onClick={() => setBulk(true)}>Bulk data</button>}
           </p>
         </div>
         <div className="searchbar">
@@ -337,6 +340,8 @@ export default function FamilyApp({ people, isAdmin, familyName, defaultLang, la
         </span>
         <span className="foot-credit"><span className="credit-long">{lang === "gu" ? "❤️ સાથે વિકસાવ્યું" : "Developed with ❤️ by"} </span><span className="credit-short">❤️ </span><a href={credit.url} target="_blank" rel="noopener noreferrer">{credit.text}</a></span>
       </footer>
+
+      {bulk && <BulkModal onClose={() => setBulk(false)} />}
 
       {lightbox && (
         <div className="modal" role="dialog" aria-label="Photo" onClick={() => setLightbox(null)}>

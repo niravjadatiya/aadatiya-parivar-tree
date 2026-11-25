@@ -2,6 +2,7 @@
 import { revalidatePath } from "next/cache";
 import { checkCredentials, endSession, isAdmin, startSession } from "@/lib/auth";
 import * as store from "@/lib/store";
+import { applyJson, type Report } from "@/lib/bulk";
 import type { PersonInput, Relation } from "@/lib/types";
 
 type Result = { ok: true } | { ok: false; error: string };
@@ -39,3 +40,18 @@ export async function updatePersonAction(id: string, input: PersonInput): Promis
 export async function deletePersonAction(id: string): Promise<Result> {
   return guard(() => store.deletePerson(id));
 }
+
+export type ImportResult = { ok: boolean; error?: string; report?: Report; applied?: boolean };
+async function runImport(text: string, apply: boolean, remove: boolean): Promise<ImportResult> {
+  if (!(await isAdmin())) return { ok: false, error: "Not authorised" };
+  if (typeof text !== "string" || text.length > 2_000_000) return { ok: false, error: "File too large" };
+  try {
+    const preview = applyJson(structuredClone(await store.readData()), text, remove);
+    if (!apply || preview.errors.length) return { ok: !preview.errors.length, report: preview };
+    const report = await store.mutate((d) => applyJson(d, text, remove));
+    revalidatePath("/");
+    return { ok: true, report, applied: true };
+  } catch (e) { return { ok: false, error: e instanceof Error ? e.message : "Something went wrong" }; }
+}
+export async function importPreviewAction(text: string, remove = false) { return runImport(text, false, !!remove); }
+export async function importApplyAction(text: string, remove = false) { return runImport(text, true, !!remove); }

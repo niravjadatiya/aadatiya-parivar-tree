@@ -45,7 +45,7 @@ async function writeData(data: FamilyData) {
   await fs.rename(tmp, file());
 }
 
-function mutate<T>(fn: (d: FamilyData) => T): Promise<T> {
+export function mutate<T>(fn: (d: FamilyData) => T): Promise<T> {
   const run = queue.then(async () => {
     const d = await readData();
     const r = fn(d);
@@ -58,7 +58,7 @@ function mutate<T>(fn: (d: FamilyData) => T): Promise<T> {
 
 const PHONE = /^\+?[\d\s()-]{7,20}$/;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-function cleanBusiness(b: Business): Business {
+export function cleanBusiness(b: Business): Business {
   const name = (b.name ?? "").trim().slice(0, 80);
   if (!name) throw new Error("Business name is required");
   const out: Business = { name };
@@ -78,7 +78,7 @@ function cleanBusiness(b: Business): Business {
 }
 
 const DATE = /^\d{4}(-\d{2}(-\d{2})?)?$/;
-function clean(input: PersonInput) {
+export function clean(input: PersonInput) {
   const nameEn = input.nameEn.trim();
   if (!nameEn) throw new Error("English name is required");
   for (const v of [input.birth, input.death]) {
