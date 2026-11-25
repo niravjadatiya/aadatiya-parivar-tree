@@ -113,7 +113,10 @@ export function paintTree(roots: Unit[], lang: Lang, rootLabel: string) {
   function branch(start: Pt, ang: number, len: number, w0: number, d: number, u: Unit, text: string, kids: Unit[], inAng = 0, lead: Pt[] = []): void {
     const rnd = rngFor(u.id);
     const trunk = d < 0;
-    if (!trunk) len = Math.min(340, Math.max(len, text.length * 11.5)); // long enough for the name
+    // an ancestor with a single child (a long line of descent) only needs as much trunk as the name; branches that fork keep full room
+    const solo = kids.length === 1 && kids[0].children.length > 0;
+    if (solo) len = trunk ? 190 : Math.max(90, text.length * 7.8);
+    else if (!trunk) len = Math.min(340, Math.max(len, text.length * 11.5)); // long enough for the name
     // arch upward: the branch bends toward vertical as it grows (like a bough)
     const lean = kids.length === 1 && kids[0].children.length ? -1 : 0; // trunk leans toward its only branch so they join smoothly
     const aEnd = trunk ? lean * 0 : ang * (0.6 + rnd() * 0.12);
@@ -146,9 +149,9 @@ export function paintTree(roots: Unit[], lang: Lang, rootLabel: string) {
       // font fits the branch thickness, and the name stays in the middle ~70% so it never runs into a junction
       const wMid = widthAt(w0, w1, plat + (1 - plat) * 0.5, flare, decay, plat);
       let fs = Math.min(trunk ? 24 : 16, Math.max(10, wMid * 0.62));
-      const room = len * 0.58, need = text.length * fs * 0.56;
+      const room = len * (solo ? 0.82 : 0.58), need = text.length * fs * 0.56;
       if (need > room) fs = Math.max(9, room / (text.length * 0.56));
-      const mid = lr ? 62 : 38; // text runs along the path; after reversal the same visual spot is mirrored
+      const mid = solo ? (lr ? 55 : 45) : (lr ? 62 : 38); // text runs along the path; after reversal the same visual spot is mirrored
       labels += `<text data-pid="${pid}" style="cursor:pointer" font-size="${f(fs)}" fill="#FBEFE3" font-weight="700" stroke="${BARK_DARK}" stroke-width="2.4" paint-order="stroke" stroke-linejoin="round"><textPath href="#${lid}" startOffset="${mid}%" text-anchor="middle" dy="${f(fs * 0.35)}">${esc(text)}</textPath></text>`;
     }
 
