@@ -20,7 +20,7 @@ function rngFor(key: string) {
 
 const dir = (a: number): Pt => [Math.sin(rad(a)), -Math.cos(rad(a))];
 
-function bez(p0: Pt, p1: Pt, p2: Pt, p3: Pt, n = 24): Pt[] {
+function bez(p0: Pt, p1: Pt, p2: Pt, p3: Pt, n = 56): Pt[] {
   const pts: Pt[] = [];
   for (let i = 0; i <= n; i++) {
     const t = i / n, u = 1 - t;
@@ -32,24 +32,34 @@ function bez(p0: Pt, p1: Pt, p2: Pt, p3: Pt, n = 24): Pt[] {
 // Width profile: thick base that flares into the parent, tapering to the tip.
 const widthAt = (w0: number, w1: number, t0: number, flare: number, decay = 11, plat = 0) => {
   const t = Math.max(0, (t0 - plat) / (1 - plat)); // constant width while overlapping the parent, then taper
-  return (w0 + (w1 - w0) * Math.pow(t, 0.8)) * (1 + flare * Math.exp(-t * decay));
+  return (w0 + (w1 - w0) * Math.pow(t, flare ? 0.8 : 1.15)) * (1 + flare * Math.exp(-t * decay)); // flare-free branches taper gently, no neck at the joint
 };
 
+// position along the path as a 0..1 fraction of its length
+function arcT(pts: Pt[]): number[] {
+  const c = [0];
+  for (let i = 1; i < pts.length; i++) c.push(c[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+  const L = c[c.length - 1] || 1;
+  return c.map((v) => v / L);
+}
+const plen = (a: Pt[]) => a.reduce((sum, p, i) => (i ? sum + Math.hypot(p[0] - a[i - 1][0], p[1] - a[i - 1][1]) : 0), 0);
+
 function ribbon(pts: Pt[], w0: number, w1: number, flare = 0, off = 0, frac = 1, decay = 11, fade = false, plat = 0) {
-  const L: Pt[] = [], R: Pt[] = [], n = pts.length;
+  const L: Pt[] = [], R: Pt[] = [], n = pts.length, T = arcT(pts);
   pts.forEach((p, i) => {
     const a = pts[Math.max(0, i - 1)], b = pts[Math.min(n - 1, i + 1)];
     const dx = b[0] - a[0], dy = b[1] - a[1], m = Math.hypot(dx, dy) || 1, nx = -dy / m, ny = dx / m;
-    const t = i / (n - 1), tf = fade ? Math.pow(Math.sin(Math.PI * t), 0.7) : 1, full = widthAt(w0, w1, t, flare, decay, plat), w = (full * frac * tf) / 2, o = (off * full * tf) / 2;
+    const t = T[i], tf = fade ? Math.pow(Math.sin(Math.PI * t), 0.7) : 1, full = widthAt(w0, w1, t, flare, decay, plat), w = (full * frac * tf) / 2, o = (off * full * tf) / 2;
     L.push([p[0] + nx * (w + o), p[1] + ny * (w + o)]); R.push([p[0] + nx * (o - w), p[1] + ny * (o - w)]);
   });
   return "M" + L.map((p) => f(p[0]) + " " + f(p[1])).join("L") + "L" + R.reverse().map((p) => f(p[0]) + " " + f(p[1])).join("L") + "Z";
 }
 const polyline = (pts: Pt[]) => "M" + pts.map((p) => f(p[0]) + " " + f(p[1])).join("L");
 function offsetLine(pts: Pt[], w0: number, w1: number, flare: number, k: number, decay = 11, plat = 0): Pt[] {
+  const T = arcT(pts);
   return pts.map((p, i, arr) => {
     const a = arr[Math.max(0, i - 1)], b = arr[Math.min(arr.length - 1, i + 1)], dx = b[0] - a[0], dy = b[1] - a[1], m = Math.hypot(dx, dy) || 1;
-    const t = i / (arr.length - 1), w = (widthAt(w0, w1, t, flare, decay, plat) * k) / 2;
+    const t = T[i], w = (widthAt(w0, w1, t, flare, decay, plat) * k) / 2;
     return [p[0] - (dy / m) * w, p[1] + (dx / m) * w];
   });
 }
@@ -87,7 +97,7 @@ export function paintTree(roots: Unit[], lang: Lang, rootLabel: string) {
     named += `<g data-pid="${esc(u.primary.id)}" style="cursor:pointer" transform="translate(${f(x)} ${f(y)}) rotate(${f(a)})"><path d="${leafBody(L, W)}" fill="${c}" stroke="#244F1D" stroke-width="1.2"/><path d="${leafHalf(L, W)}" fill="#fff" opacity=".13"/><path d="${leafVeins(L, W)}" stroke="#244F1D" stroke-width=".9" opacity=".45" fill="none"/><text transform="translate(${f(L * 0.5)} 0)${flip ? " rotate(180)" : ""}" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#fff" font-weight="600" stroke="#244F1D" stroke-width="2.2" paint-order="stroke" stroke-linejoin="round">${esc(text)}</text></g>`;
   }
 
-  function branch(start: Pt, ang: number, len: number, w0: number, d: number, u: Unit, text: string, kids: Unit[], inAng = 0, ov = 0): void {
+  function branch(start: Pt, ang: number, len: number, w0: number, d: number, u: Unit, text: string, kids: Unit[], inAng = 0, lead: Pt[] = []): void {
     const rnd = rngFor(u.id);
     const trunk = d < 0;
     if (!trunk) len = Math.min(340, Math.max(len, text.length * 11.5)); // long enough for the name
@@ -97,14 +107,17 @@ export function paintTree(roots: Unit[], lang: Lang, rootLabel: string) {
     const aMid = trunk ? lean * 0 : ang * 0.92;
     const p0 = start;
     const bAng = trunk ? 0 : inAng; // start tangent = parent end tangent (smooth joint), then bend toward `ang`
-    const run = trunk ? len * 0.4 : ov * 1.3 + len * 0.3; // run straight past the parent's end before bending
+    const run = trunk ? len * 0.4 : len * 0.32; // keep the parent's heading for a while, then bend
     const p1: Pt = [p0[0] + dir(bAng)[0] * run, p0[1] + dir(bAng)[1] * run];
     const p3: Pt = [p0[0] + dir(aMid)[0] * len, p0[1] + dir(aMid)[1] * len];
     const p2: Pt = [p3[0] - dir(aEnd)[0] * len * 0.34, p3[1] - dir(aEnd)[1] * len * 0.34];
-    const pts = bez(p0, p1, p2, p3);
-    const end = pts[pts.length - 1];
-    const plat = ov / len;
-    const w1 = trunk ? 84 : Math.max(16, w0 * 0.66), flare = trunk ? 0.6 : 0.3, decay = trunk ? 7 : 11;
+    const own = bez(p0, p1, p2, p3);
+    const end = own[own.length - 1];
+    // a child begins by retracing the parent's last stretch exactly (same centreline and width), so the joint has no seam
+    const pts: Pt[] = lead.length ? [...lead.slice(0, -1), ...own] : own;
+    const n0 = lead.length ? lead.length - 1 : 0, T = arcT(pts);
+    const leadLen = lead.length ? plen(lead) : 0, plat = leadLen ? leadLen / (leadLen + plen(own)) : 0;
+    const w1 = trunk ? 84 : Math.max(16, w0 * 0.6), flare = trunk ? 0.6 : 0, decay = trunk ? 7 : 11;
     pts.forEach((p, i) => ext(p[0], p[1], i === 0 ? w0 : w0 * 0.4));
 
     const pid = esc(u.primary.id);
@@ -113,12 +126,12 @@ export function paintTree(roots: Unit[], lang: Lang, rootLabel: string) {
     hi += `<path d="${ribbon(pts, w0, w1, flare, -0.34, 0.26, decay, true, plat)}" fill="${BARK_LIGHT}" opacity=".6" pointer-events="none"/>`;
     for (const k of [-0.18, 0.12]) hi += `<path d="${polyline(offsetLine(pts, w0, w1, flare, k, decay, plat).slice(6, -7))}" stroke="${BARK_DARK}" stroke-width="1.2" fill="none" opacity=".4" pointer-events="none"/>`;
 
-    bark += `<circle cx="${f(end[0])}" cy="${f(end[1])}" r="${f((w1 * 0.5) * 0.98)}" fill="${BARK}"/>`;
+    bark += `<circle cx="${f(end[0])}" cy="${f(end[1])}" r="${f(w1 * 0.5)}" fill="${BARK}"/>`;
     if (text) {
-      const lid = "p" + uid++, lr = p3[0] >= p0[0], ps = lr ? pts : pts.slice().reverse();
+      const lid = "p" + uid++, lr = p3[0] >= p0[0], ps = lr ? own : own.slice().reverse();
       defs += `<path id="${lid}" d="${polyline(ps)}"/>`;
       // font fits the branch thickness, and the name stays in the middle ~70% so it never runs into a junction
-      const wMid = widthAt(w0, w1, 0.5, flare, decay, plat);
+      const wMid = widthAt(w0, w1, plat + (1 - plat) * 0.5, flare, decay, plat);
       let fs = Math.min(trunk ? 24 : 16, Math.max(10, wMid * 0.62));
       const room = len * 0.58, need = text.length * fs * 0.56;
       if (need > room) fs = Math.max(9, room / (text.length * 0.56));
@@ -130,10 +143,10 @@ export function paintTree(roots: Unit[], lang: Lang, rootLabel: string) {
     if (d >= 0) {
       const n = 4 + Math.floor(rnd() * 3);
       for (let i = 0; i < n; i++) {
-        const idx = Math.floor((0.45 + rnd() * 0.5) * (pts.length - 1)), p = pts[idx];
-        const q = pts[Math.min(pts.length - 1, idx + 1)], r0 = pts[Math.max(0, idx - 1)];
+        const idx = Math.floor((0.45 + rnd() * 0.5) * (own.length - 1)), p = own[idx];
+        const q = own[Math.min(own.length - 1, idx + 1)], r0 = own[Math.max(0, idx - 1)];
         const tx = q[0] - r0[0], ty = q[1] - r0[1], tm = Math.hypot(tx, ty) || 1;
-        const side = i % 2 ? 1 : -1, wHere = widthAt(w0, w1, idx / (pts.length - 1), flare, decay, plat);
+        const side = i % 2 ? 1 : -1, wHere = widthAt(w0, w1, T[n0 + idx], flare, decay, plat);
         const ex = p[0] + (-ty / tm) * side * wHere * 0.42, ey = p[1] + (tx / tm) * side * wHere * 0.42;
         const tang = (Math.atan2(ty, tx) * 180) / Math.PI;
         decoLeaf(ex, ey, tang + side * (38 + rnd() * 26), 0.6 + rnd() * 0.45, rnd);
@@ -151,8 +164,9 @@ export function paintTree(roots: Unit[], lang: Lang, rootLabel: string) {
       acc += share;
       const ka = aEnd + center + (rnd() - 0.5) * 8;
       if (k.children.length) {
-        const dn = dir(aEnd), ovl = Math.max(14, w1), s2: Pt = [end[0] - dn[0] * ovl, end[1] - dn[1] * ovl];
-        branch(s2, ka, Math.max(140, len * (kids.length === 1 ? 0.84 : 0.92)) + ovl, Math.max(22, w1 / (1 + 0.3)), d + 1, k, label(k), k.children, aEnd, ovl);
+        const ovl = Math.max(30, w1 * 1.4), lead2: Pt[] = [end];
+        for (let i = pts.length - 2, run2 = 0; i >= 0 && run2 < ovl; i--) { run2 += Math.hypot(pts[i][0] - pts[i + 1][0], pts[i][1] - pts[i + 1][1]); lead2.unshift(pts[i]); }
+        branch(end, ka, Math.max(140, len * (kids.length === 1 ? 0.84 : 0.92)), Math.max(22, w1), d + 1, k, label(k), k.children, aEnd, lead2);
       } else {
         const tl = 30 + rnd() * 14, sd = dir(ka), tip: Pt = [end[0] + sd[0] * tl, end[1] + sd[1] * tl];
         const tw = bez(end, [end[0] + sd[0] * tl * 0.4, end[1] + sd[1] * tl * 0.4 - 3], [tip[0] - sd[0] * tl * 0.3, tip[1] - sd[1] * tl * 0.3 + 3], tip, 8);
