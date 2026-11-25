@@ -51,6 +51,11 @@ export default function FamilyApp({ people, isAdmin, familyName, defaultLang, la
   const moved = useRef(false);
   const t = getT(lang);
 
+  const [visits, setVisits] = useState<number | null>(null);
+  useEffect(() => {
+    let counted = false; try { counted = !!sessionStorage.getItem("visited"); sessionStorage.setItem("visited", "1"); } catch {}
+    fetch("/api/visit", { method: counted ? "GET" : "POST" }).then((r) => r.json()).then((d) => setVisits(d.count)).catch(() => {});
+  }, []);
   useEffect(() => { try { const s = localStorage.getItem("lang"); if (s === "en" || s === "gu") setLang(s); } catch {} }, []);
   const pickLang = (l: Lang) => { setLang(l); try { localStorage.setItem("lang", l); } catch {} };
 
@@ -338,6 +343,7 @@ export default function FamilyApp({ people, isAdmin, familyName, defaultLang, la
           <a href={`https://wa.me/${contact.phone.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer">WhatsApp</a>
         </span>
         <span className="foot-credit"><span className="credit-long">{lang === "gu" ? "❤️ સાથે વિકસાવ્યું" : "Developed with ❤️ by"} </span><span className="credit-short">❤️ </span><a href={credit.url} target="_blank" rel="noopener noreferrer">{credit.text}</a></span>
+        {visits ? <span className="foot-visits" title={lang === "gu" ? "મુલાકાતો" : "Visits"}>👁 {visits.toLocaleString("en-IN")}</span> : null}
       </footer>
 
       {bulk && <BulkModal onClose={() => setBulk(false)} />}

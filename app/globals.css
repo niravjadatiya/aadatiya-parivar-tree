@@ -218,3 +218,5 @@ input[type=checkbox].sw:checked::after{transform:translateX(18px)}
 @keyframes sway{0%{transform:rotate(-3.5deg)}100%{transform:rotate(3.5deg)}}
 .painted.moving .sw{animation-play-state:paused}
 @media (prefers-reduced-motion:reduce){.painted-svg .sw{animation:none}}
+
+.foot-visits{opacity:.7;white-space:nowrap;font-variant-numeric:tabular-nums}
