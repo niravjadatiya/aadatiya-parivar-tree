@@ -82,11 +82,10 @@ export default function FamilyApp({ people, isAdmin, familyName, defaultLang, la
   useEffect(() => {
     const el = vp.current; if (!el) return;
     const onWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      if (e.ctrlKey) {
-        const r = el.getBoundingClientRect(); const cx = e.clientX - r.left, cy = e.clientY - r.top;
-        setView((v) => { const k = Math.min(2, Math.max(0.3, v.k * Math.exp(-e.deltaY * 0.01))); const s = k / v.k; return { k, x: cx - (cx - v.x) * s, y: cy - (cy - v.y) * s }; });
-      } else setView((v) => ({ ...v, x: v.x - e.deltaX, y: v.y - e.deltaY }));
+      e.preventDefault(); // scroll wheel zooms toward the cursor (pinch on a trackpad zooms faster)
+      const r = el.getBoundingClientRect(); const cx = e.clientX - r.left, cy = e.clientY - r.top;
+      const dy = e.deltaMode === 1 ? e.deltaY * 33 : e.deltaY;
+      setView((v) => { const k = Math.min(2, Math.max(0.3, v.k * Math.exp(-dy * (e.ctrlKey ? 0.01 : 0.002)))); const s = k / v.k; return { k, x: cx - (cx - v.x) * s, y: cy - (cy - v.y) * s }; });
     };
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);

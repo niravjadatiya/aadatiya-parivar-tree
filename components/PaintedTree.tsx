@@ -29,10 +29,10 @@ export default function PaintedTree({ roots, lang, rootLabel, onSelect, labels }
   useEffect(() => {
     const el = box.current; if (!el) return;
     const onWheel = (e: WheelEvent) => {
-      e.preventDefault();
+      e.preventDefault(); // scroll wheel zooms toward the cursor (pinch on a trackpad zooms faster)
       const r = el.getBoundingClientRect();
-      if (e.ctrlKey) zoomAt(Math.exp(-e.deltaY * 0.01), e.clientX - r.left, e.clientY - r.top);
-      else setView((v) => ({ ...v, x: v.x - e.deltaX, y: v.y - e.deltaY }));
+      const dy = e.deltaMode === 1 ? e.deltaY * 33 : e.deltaY;
+      zoomAt(Math.exp(-dy * (e.ctrlKey ? 0.01 : 0.002)), e.clientX - r.left, e.clientY - r.top);
     };
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
