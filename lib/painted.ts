@@ -89,9 +89,22 @@ export function paintTree(roots: Unit[], lang: Lang, rootLabel: string) {
     void sd;
   }
 
+  // Named leaves already placed, as a few circles along each leaf, so new leaves can avoid overlapping them.
+  const placed: { x: number; y: number; r: number }[] = [];
+  const LEAF_W = 25;
+  const leafLen = (u: Unit) => Math.max(70, Math.round((u.spouse ? label(u) : shortName(u.primary, lang)).length * 5.9) + 24);
+  const leafCircles = (x: number, y: number, a: number, L: number) =>
+    [0.15, 0.3, 0.45, 0.6, 0.75, 0.9].map((fr, i) => ({ x: x + Math.cos(rad(a)) * L * fr, y: y + Math.sin(rad(a)) * L * fr, r: LEAF_W * [0.55, 0.85, 1, 0.95, 0.75, 0.45][i] * 0.9 }));
+  const leafPenalty = (x: number, y: number, a: number, L: number) => {
+    let pen = 0;
+    for (const c of leafCircles(x, y, a, L)) for (const p of placed) pen += Math.max(0, c.r + p.r + 3 - Math.hypot(c.x - p.x, c.y - p.y));
+    return pen;
+  };
+
   function nameLeaf(x: number, y: number, a: number, u: Unit, rnd: () => number) {
     const text = u.spouse ? label(u) : shortName(u.primary, lang);
-    const L = Math.max(70, Math.round(text.length * 5.9) + 24), W = 25;
+    const L = Math.max(70, Math.round(text.length * 5.9) + 24), W = LEAF_W;
+    placed.push(...leafCircles(x, y, a, L));
     const c = GREENS[1 + Math.floor(rnd() * 3)], flip = (a > 90 && a < 270) || a < -90;
     ext(x + Math.cos(rad(a)) * L, y + Math.sin(rad(a)) * L, W); ext(x, y, W);
     named += `<g data-pid="${esc(u.primary.id)}" style="cursor:pointer" transform="translate(${f(x)} ${f(y)}) rotate(${f(a)})"><path d="${leafBody(L, W)}" fill="${c}" stroke="#244F1D" stroke-width="1.2"/><path d="${leafHalf(L, W)}" fill="#fff" opacity=".13"/><path d="${leafVeins(L, W)}" stroke="#244F1D" stroke-width=".9" opacity=".45" fill="none"/><text transform="translate(${f(L * 0.5)} 0)${flip ? " rotate(180)" : ""}" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#fff" font-weight="600" stroke="#244F1D" stroke-width="2.2" paint-order="stroke" stroke-linejoin="round">${esc(text)}</text></g>`;
@@ -168,10 +181,19 @@ export function paintTree(roots: Unit[], lang: Lang, rootLabel: string) {
         for (let i = pts.length - 2, run2 = 0; i >= 0 && run2 < ovl; i--) { run2 += Math.hypot(pts[i][0] - pts[i + 1][0], pts[i][1] - pts[i + 1][1]); lead2.unshift(pts[i]); }
         branch(end, ka, Math.max(140, len * (kids.length === 1 ? 0.84 : 0.92)), Math.max(22, w1), d + 1, k, label(k), k.children, aEnd, lead2);
       } else {
-        const tl = 30 + rnd() * 14, sd = dir(ka), tip: Pt = [end[0] + sd[0] * tl, end[1] + sd[1] * tl];
-        const tw = bez(end, [end[0] + sd[0] * tl * 0.4, end[1] + sd[1] * tl * 0.4 - 3], [tip[0] - sd[0] * tl * 0.3, tip[1] - sd[1] * tl * 0.3 + 3], tip, 8);
+        // choose a direction and twig length where the leaf does not overlap leaves already placed
+        const tl0 = 30 + rnd() * 14, jitter = (rnd() - 0.5) * 16, L = leafLen(k);
+        let best = { ka2: ka, tl: tl0, pen: Infinity };
+        search: for (const dl of [0, 14, 28]) for (const da of [0, 10, -10, 20, -20, 32, -32, 45, -45]) {
+          const ka2 = ka + da, tl = tl0 + dl, sd2 = dir(ka2);
+          const pen = leafPenalty(end[0] + sd2[0] * tl, end[1] + sd2[1] * tl, ka2 - 90 + jitter, L);
+          if (pen < best.pen) best = { ka2, tl, pen };
+          if (pen === 0) break search;
+        }
+        const sd = dir(best.ka2), tip: Pt = [end[0] + sd[0] * best.tl, end[1] + sd[1] * best.tl];
+        const tw = bez(end, [end[0] + sd[0] * best.tl * 0.4, end[1] + sd[1] * best.tl * 0.4 - 3], [tip[0] - sd[0] * best.tl * 0.3, tip[1] - sd[1] * best.tl * 0.3 + 3], tip, 8);
         twigs += `<path d="${ribbon(tw, 6.5, 2.6)}" fill="${BARK}"/>`;
-        nameLeaf(tip[0], tip[1], ka - 90 + (rnd() - 0.5) * 16, k, rnd);
+        nameLeaf(tip[0], tip[1], best.ka2 - 90 + jitter, k, rnd);
       }
     });
   }
