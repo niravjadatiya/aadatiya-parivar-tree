@@ -42,8 +42,8 @@ export default function FamilyApp({ people, isAdmin, familyName, defaultLang, la
   const [form, setForm] = useState<FormState>(null);
   const [view, setView] = useState({ x: 0, y: 0, k: 1 });
   const [bulk, setBulk] = useState(false);
-  const [mode, setMode] = useState<"chart" | "painted">("chart");
-  useEffect(() => { try { if (localStorage.getItem("view") === "painted") setMode("painted"); } catch {} }, []);
+  const [mode, setMode] = useState<"chart" | "painted">("painted");
+  useEffect(() => { try { if (localStorage.getItem("view") === "chart") setMode("chart"); } catch {} }, []);
   const pickMode = (m: "chart" | "painted") => { setMode(m); try { localStorage.setItem("view", m); } catch {} };
   const [compact, setCompact] = useState(false);
   const M = compact ? COMPACT : FULL;
