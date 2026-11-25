@@ -1,13 +1,11 @@
 import { cookies } from "next/headers";
-import { adminDefaults } from "@/config/admin";
 import { createHmac, scryptSync, timingSafeEqual, randomBytes } from "crypto";
 
 const COOKIE = "admin_session";
 const MAX_AGE = 60 * 60 * 24 * 7;
 
-const secret = () => {
-  return process.env.SESSION_SECRET || adminDefaults.sessionSecret;
-};
+// Admin is DISABLED unless these env vars are set (no secrets live in the repo).
+const secret = () => process.env.SESSION_SECRET || "";
 const sign = (v: string) => createHmac("sha256", secret()).update(v).digest("base64url");
 
 export function hashPassword(pw: string) {
@@ -16,8 +14,9 @@ export function hashPassword(pw: string) {
 }
 
 export function checkCredentials(username: string, password: string) {
-  const u = process.env.ADMIN_USERNAME || adminDefaults.username;
-  const stored = process.env.ADMIN_PASSWORD_HASH || adminDefaults.passwordHash;
+  const u = process.env.ADMIN_USERNAME || "";
+  const stored = process.env.ADMIN_PASSWORD_HASH || "";
+  if (!u || secret().length < 32) return false;
   const [, salt, hash] = stored.split(":");
   const userOk = username.length === u.length && timingSafeEqual(Buffer.from(username), Buffer.from(u));
   if (!salt || !hash) return false;
@@ -37,6 +36,7 @@ export async function startSession() {
 export async function endSession() { (await cookies()).delete(COOKIE); }
 
 export async function isAdmin(): Promise<boolean> {
+  if (secret().length < 32) return false;
   const v = (await cookies()).get(COOKIE)?.value;
   if (!v) return false;
   const [payload, sig] = v.split(".");

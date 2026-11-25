@@ -212,7 +212,7 @@ export default function FamilyApp({ people, isAdmin, familyName, defaultLang, la
           )}
           <div className="seg" role="group" aria-label="View">
             <button aria-pressed={mode === "chart"} onClick={() => pickMode("chart")}>{t.viewChart}</button>
-            <button aria-pressed={mode === "painted"} onClick={() => pickMode("painted")}>{t.viewTree}</button>
+            <button aria-pressed={mode === "painted"} onClick={() => pickMode("painted")}>🌳 {t.viewTree}</button>
           </div>
           {isAdmin && <button className="btn soft hide-sm" onClick={logout}>{t.signOut}</button>}
         </div>
@@ -220,7 +220,7 @@ export default function FamilyApp({ people, isAdmin, familyName, defaultLang, la
 
       <div className="stage">
         {mode === "painted" ? (
-          <PaintedTree roots={roots} lang={lang} rootLabel={lang === "gu" ? familyName.gu : familyName.en} onSelect={setSelectedId} labels={{ fit: t.fit, save: t.saveImage }} />
+          <PaintedTree roots={roots} lang={lang} rootLabel={lang === "gu" ? familyName.gu : familyName.en} onSelect={setSelectedId} labels={{ fit: t.fit, save: t.saveImage, hint: t.treeHint }} />
         ) : (
           <>
         <div className="viewport" ref={vp} onPointerDown={onPointerDown} onClickCapture={(e) => { if (moved.current) { e.stopPropagation(); e.preventDefault(); moved.current = false; } }}>

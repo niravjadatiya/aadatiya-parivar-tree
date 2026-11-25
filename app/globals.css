@@ -200,3 +200,10 @@ input[type=checkbox].sw:checked::after{transform:translateX(18px)}
 .bulk-report p{margin:0}.bulk-report ul{margin:4px 0 0;padding-left:18px}
 .bulk-report ul.err{color:#B3261E}.bulk-report .ok{color:#2E7D32;font-weight:600}
 .bulk-report summary{cursor:pointer;font-weight:600}
+
+.painted-svg [data-pid]{cursor:pointer}
+.painted-svg [data-pid]:hover{filter:brightness(1.12) drop-shadow(0 0 3px rgba(255,255,255,.8))}
+.tree-hint{position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:5;display:flex;align-items:center;gap:10px;max-width:calc(100% - 24px);padding:9px 14px;border-radius:999px;background:#fff;color:#4A2D20;font-size:13px;font-weight:600;box-shadow:0 4px 16px rgba(43,33,24,.2);cursor:pointer;animation:hintpulse 2.4s ease-in-out infinite}
+.tree-hint b{font-size:18px;line-height:1;opacity:.55}
+@keyframes hintpulse{50%{transform:translateX(-50%) translateY(3px)}}
+@media(max-width:767px){.tree-hint{font-size:12px;padding:7px 12px}}

@@ -4,11 +4,14 @@ import type { Lang } from "@/config/site";
 import type { Unit } from "@/lib/tree";
 import { paintTree } from "@/lib/painted";
 
-type Props = { roots: Unit[]; lang: Lang; rootLabel: string; onSelect: (id: string) => void; labels: { fit: string; save: string } };
+type Props = { roots: Unit[]; lang: Lang; rootLabel: string; onSelect: (id: string) => void; labels: { fit: string; save: string; hint: string } };
 
 export default function PaintedTree({ roots, lang, rootLabel, onSelect, labels }: Props) {
   const { inner, vb } = useMemo(() => paintTree(roots, lang, rootLabel), [roots, lang, rootLabel]);
   const box = useRef<HTMLDivElement>(null);
+  const [hint, setHint] = useState(false);
+  useEffect(() => { try { if (!localStorage.getItem("treeHint")) setHint(true); } catch {} }, []);
+  const closeHint = () => { setHint(false); try { localStorage.setItem("treeHint", "1"); } catch {} };
   const [view, setView] = useState({ x: 0, y: 0, k: 1 });
   const moved = useRef(false);
   const pointers = useRef(new Map<number, { x: number; y: number }>());
@@ -72,7 +75,7 @@ export default function PaintedTree({ roots, lang, rootLabel, onSelect, labels }
   const onClick = (e: React.MouseEvent) => {
     if (moved.current) { moved.current = false; return; }
     const id = (e.target as Element).closest("[data-pid]")?.getAttribute("data-pid");
-    if (id && id !== "__root") onSelect(id);
+    if (id && id !== "__root") { closeHint(); onSelect(id); }
   };
 
   const save = () => {
@@ -93,6 +96,11 @@ export default function PaintedTree({ roots, lang, rootLabel, onSelect, labels }
       <svg className="painted-svg" width={vb.w} height={vb.h} viewBox={`${vb.x} ${vb.y} ${vb.w} ${vb.h}`}
         style={{ position: "absolute", left: 0, top: 0, transformOrigin: "0 0", transform: `translate(${view.x + vb.x * view.k}px,${view.y + vb.y * view.k}px) scale(${view.k})` }}
         dangerouslySetInnerHTML={{ __html: inner }} />
+      {hint && (
+        <div className="tree-hint" onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); closeHint(); }} role="status">
+          <span>🌳 {labels.hint}</span><b aria-label="Dismiss">×</b>
+        </div>
+      )}
       <div className="tools" onPointerDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
         <button className="btn soft" onClick={save}>{labels.save}</button>
         <button className="btn soft" onClick={fit}>{labels.fit}</button>
