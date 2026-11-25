@@ -207,3 +207,14 @@ input[type=checkbox].sw:checked::after{transform:translateX(18px)}
 .tree-hint b{font-size:18px;line-height:1;opacity:.55}
 @keyframes hintpulse{50%{transform:translateX(-50%) translateY(3px)}}
 @media(max-width:767px){.tree-hint{font-size:12px;padding:7px 12px}}
+
+/* wind sway on leaves: transform-only, paused while dragging/zooming and for reduced-motion users */
+.painted-svg .sw{transform-origin:0 0;animation:sway 4s ease-in-out infinite alternate;will-change:transform}
+.painted-svg .sw0{animation-duration:3.3s;animation-delay:-.4s}
+.painted-svg .sw1{animation-duration:4.1s;animation-delay:-1.7s}
+.painted-svg .sw2{animation-duration:5s;animation-delay:-3.1s}
+.painted-svg .sw3{animation-duration:3.7s;animation-delay:-2.2s}
+.painted-svg .sw4{animation-duration:4.6s;animation-delay:-.9s}
+@keyframes sway{0%{transform:rotate(-3.5deg)}100%{transform:rotate(3.5deg)}}
+.painted.moving .sw{animation-play-state:paused}
+@media (prefers-reduced-motion:reduce){.painted-svg .sw{animation:none}}

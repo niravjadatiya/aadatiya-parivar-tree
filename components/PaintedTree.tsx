@@ -38,7 +38,9 @@ export default function PaintedTree({ roots, lang, rootLabel, onSelect, labels }
 
   useEffect(() => {
     const el = box.current; if (!el) return;
+    let t: ReturnType<typeof setTimeout> | undefined;
     const onWheel = (e: WheelEvent) => {
+      el.classList.add("moving"); clearTimeout(t); t = setTimeout(() => el.classList.remove("moving"), 250);
       e.preventDefault(); // scroll wheel zooms toward the cursor (pinch on a trackpad zooms faster)
       const r = el.getBoundingClientRect();
       const dy = e.deltaMode === 1 ? e.deltaY * 33 : e.deltaY;
@@ -50,7 +52,7 @@ export default function PaintedTree({ roots, lang, rootLabel, onSelect, labels }
 
   const onPointerDown = (e: React.PointerEvent) => {
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    moved.current = false; pinch.current = 0;
+    moved.current = false; pinch.current = 0; box.current?.classList.add("moving");
     const move = (ev: PointerEvent) => {
       const prev = pointers.current.get(ev.pointerId); if (!prev) return;
       pointers.current.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
@@ -67,7 +69,7 @@ export default function PaintedTree({ roots, lang, rootLabel, onSelect, labels }
     };
     const up = (ev: PointerEvent) => {
       pointers.current.delete(ev.pointerId); pinch.current = 0;
-      if (!pointers.current.size) { window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", up); window.removeEventListener("pointercancel", up); }
+      if (!pointers.current.size) { box.current?.classList.remove("moving"); window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", up); window.removeEventListener("pointercancel", up); }
     };
     window.addEventListener("pointermove", move); window.addEventListener("pointerup", up); window.addEventListener("pointercancel", up);
   };

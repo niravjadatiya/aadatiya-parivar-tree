@@ -80,12 +80,20 @@ export function paintTree(roots: Unit[], lang: Lang, rootLabel: string) {
   const ext = (x: number, y: number, pad = 0) => { minX = Math.min(minX, x - pad); maxX = Math.max(maxX, x + pad); minY = Math.min(minY, y - pad); };
   const label = (u: Unit) => (u.spouse ? `${shortName(u.primary, lang)} & ${shortName(u.spouse, lang)}` : fullName(u.primary, lang));
 
+  // Wind sway: CSS-animated wrapper around a leaf (rotates about the leaf base). Every 2nd decorative leaf only, to stay light.
+  let swayN = 0, swayOpen = false;
+  const sw = (close = 0, force = false) => {
+    if (close) return swayOpen ? "</g>" : "";
+    swayN++; swayOpen = force || swayN % 2 === 0;
+    return swayOpen ? `<g class="sw sw${swayN % 5}">` : "";
+  };
+
   // A small leaf on a short stem that grows from the edge of a branch, pointing outward and toward the tip.
   function decoLeaf(x: number, y: number, a: number, s: number, rnd: () => number) {
     const c = GREENS[Math.floor(rnd() * GREENS.length)], sd = dir(a + 90), st = 7 * s;
     const ox = x + Math.cos(rad(a)) * st, oy = y + Math.sin(rad(a)) * st;
     ext(ox, oy, 34);
-    deco += `<path d="M${f(x)} ${f(y)}L${f(ox)} ${f(oy)}" stroke="#3A5A28" stroke-width="2" stroke-linecap="round" fill="none"/><g transform="translate(${f(ox)} ${f(oy)}) rotate(${f(a)}) scale(${f(s)})"><path d="${leafBody(44, 15)}" fill="${c}" stroke="#244F1D" stroke-width=".9"/><path d="${leafHalf(44, 15)}" fill="#fff" opacity=".12"/><path d="M2 0H40" stroke="#244F1D" stroke-width=".8" opacity=".5"/></g>`;
+    deco += `<path d="M${f(x)} ${f(y)}L${f(ox)} ${f(oy)}" stroke="#3A5A28" stroke-width="2" stroke-linecap="round" fill="none"/><g transform="translate(${f(ox)} ${f(oy)}) rotate(${f(a)}) scale(${f(s)})">${sw()}<path d="${leafBody(44, 15)}" fill="${c}" stroke="#244F1D" stroke-width=".9"/><path d="${leafHalf(44, 15)}" fill="#fff" opacity=".12"/><path d="M2 0H40" stroke="#244F1D" stroke-width=".8" opacity=".5"/>${sw(1)}</g>`;
     void sd;
   }
 
@@ -107,7 +115,7 @@ export function paintTree(roots: Unit[], lang: Lang, rootLabel: string) {
     placed.push(...leafCircles(x, y, a, L));
     const c = GREENS[1 + Math.floor(rnd() * 3)], flip = (a > 90 && a < 270) || a < -90;
     ext(x + Math.cos(rad(a)) * L, y + Math.sin(rad(a)) * L, W); ext(x, y, W);
-    named += `<g data-pid="${esc(u.primary.id)}" style="cursor:pointer" transform="translate(${f(x)} ${f(y)}) rotate(${f(a)})"><path d="${leafBody(L, W)}" fill="${c}" stroke="#244F1D" stroke-width="1.2"/><path d="${leafHalf(L, W)}" fill="#fff" opacity=".13"/><path d="${leafVeins(L, W)}" stroke="#244F1D" stroke-width=".9" opacity=".45" fill="none"/><text transform="translate(${f(L * 0.5)} 0)${flip ? " rotate(180)" : ""}" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#fff" font-weight="600" stroke="#244F1D" stroke-width="2.2" paint-order="stroke" stroke-linejoin="round">${esc(text)}</text></g>`;
+    named += `<g data-pid="${esc(u.primary.id)}" style="cursor:pointer" transform="translate(${f(x)} ${f(y)}) rotate(${f(a)})">${sw(0, true)}<path d="${leafBody(L, W)}" fill="${c}" stroke="#244F1D" stroke-width="1.2"/><path d="${leafHalf(L, W)}" fill="#fff" opacity=".13"/><path d="${leafVeins(L, W)}" stroke="#244F1D" stroke-width=".9" opacity=".45" fill="none"/><text transform="translate(${f(L * 0.5)} 0)${flip ? " rotate(180)" : ""}" text-anchor="middle" dominant-baseline="central" font-size="11" fill="#fff" font-weight="600" stroke="#244F1D" stroke-width="2.2" paint-order="stroke" stroke-linejoin="round">${esc(text)}</text>${sw(1)}</g>`;
   }
 
   function branch(start: Pt, ang: number, len: number, w0: number, d: number, u: Unit, text: string, kids: Unit[], inAng = 0, lead: Pt[] = []): void {
