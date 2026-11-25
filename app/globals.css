@@ -13,7 +13,7 @@ h1,h2,p{margin:0}
 .top-actions{display:flex;gap:10px;align-items:center}
 .chip-admin{font-size:11px;font-weight:700;color:#fff;background:var(--accent);border-radius:6px;padding:2px 7px}
 .seg{display:flex;background:var(--soft);border-radius:999px;padding:3px}
-.seg button{min-width:44px;height:36px;border:0;border-radius:999px;background:transparent;color:var(--muted);font-size:13px;font-weight:600}
+.seg button{min-width:44px;padding:0 12px;height:36px;border:0;border-radius:999px;background:transparent;color:var(--muted);font-size:13px;font-weight:600}
 .seg button[aria-pressed=true]{background:var(--accent);color:#fff}
 
 .btn{height:44px;padding:0 16px;border:0;border-radius:12px;font-size:14px;font-weight:600}

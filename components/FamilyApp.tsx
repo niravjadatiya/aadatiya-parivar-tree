@@ -211,8 +211,8 @@ export default function FamilyApp({ people, isAdmin, familyName, defaultLang, la
         <div className="top-actions">
           {languages.length > 1 && (
             <div className="seg" role="group" aria-label="Language">
-              <button aria-pressed={lang === "en"} onClick={() => pickLang("en")}>EN</button>
-              <button aria-pressed={lang === "gu"} onClick={() => pickLang("gu")}>ગુ</button>
+              <button aria-pressed={lang === "en"} onClick={() => pickLang("en")}>English</button>
+              <button aria-pressed={lang === "gu"} onClick={() => pickLang("gu")}>ગુજરાતી</button>
             </div>
           )}
           <div className="seg" role="group" aria-label="View">
