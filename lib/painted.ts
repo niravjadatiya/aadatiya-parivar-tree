@@ -115,7 +115,7 @@ export function paintTree(roots: Unit[], lang: Lang, rootLabel: string) {
     const trunk = d < 0;
     // an ancestor with a single child (a long line of descent) only needs as much trunk as the name; branches that fork keep full room
     const solo = kids.length === 1 && kids[0].children.length > 0;
-    if (solo) len = trunk ? 190 : Math.max(90, text.length * 7.8);
+    if (solo) len = trunk ? 150 : 74; // short, wide trunk blocks with the name written straight across
     else if (!trunk) len = Math.min(340, Math.max(len, text.length * 11.5)); // long enough for the name
     // arch upward: the branch bends toward vertical as it grows (like a bough)
     const lean = kids.length === 1 && kids[0].children.length ? -1 : 0; // trunk leans toward its only branch so they join smoothly
@@ -133,7 +133,7 @@ export function paintTree(roots: Unit[], lang: Lang, rootLabel: string) {
     const pts: Pt[] = lead.length ? [...lead.slice(0, -1), ...own] : own;
     const n0 = lead.length ? lead.length - 1 : 0, T = arcT(pts);
     const leadLen = lead.length ? plen(lead) : 0, plat = leadLen ? leadLen / (leadLen + plen(own)) : 0;
-    const w1 = trunk ? 84 : Math.max(16, w0 * 0.6), flare = trunk ? 0.6 : 0, decay = trunk ? 7 : 11;
+    const w1 = solo ? (trunk ? 124 : Math.max(112, w0 * 0.95)) : trunk ? 84 : Math.max(16, w0 * 0.6), flare = trunk ? 0.6 : 0, decay = trunk ? 7 : 11;
     pts.forEach((p, i) => ext(p[0], p[1], i === 0 ? w0 : w0 * 0.4));
 
     const pid = esc(u.primary.id);
@@ -143,7 +143,12 @@ export function paintTree(roots: Unit[], lang: Lang, rootLabel: string) {
     for (const k of [-0.18, 0.12]) hi += `<path d="${polyline(offsetLine(pts, w0, w1, flare, k, decay, plat).slice(6, -7))}" stroke="${BARK_DARK}" stroke-width="1.2" fill="none" opacity=".4" pointer-events="none"/>`;
 
     bark += `<circle cx="${f(end[0])}" cy="${f(end[1])}" r="${f(w1 * 0.5)}" fill="${BARK}"/>`;
-    if (text) {
+    if (text && solo) {
+      // wide trunk block: write the name straight (horizontal) across the middle
+      const m = own[Math.floor(own.length * 0.5)], wMid = widthAt(w0, w1, plat + (1 - plat) * 0.5, flare, decay, plat);
+      const fs = Math.max(9, Math.min(trunk ? 20 : 15, (wMid * 0.84) / (text.length * 0.56)));
+      labels += `<text data-pid="${pid}" style="cursor:pointer" x="${f(m[0])}" y="${f(m[1] + fs * 0.35)}" text-anchor="middle" font-size="${f(fs)}" fill="#FBEFE3" font-weight="700" stroke="${BARK_DARK}" stroke-width="2.4" paint-order="stroke" stroke-linejoin="round">${esc(text)}</text>`;
+    } else if (text) {
       const lid = "p" + uid++, lr = p3[0] >= p0[0], ps = lr ? own : own.slice().reverse();
       defs += `<path id="${lid}" d="${polyline(ps)}"/>`;
       // font fits the branch thickness, and the name stays in the middle ~70% so it never runs into a junction
@@ -176,7 +181,7 @@ export function paintTree(roots: Unit[], lang: Lang, rootLabel: string) {
     let acc = 0;
     kids.forEach((k, i) => {
       const share = weights[i] / total;
-      const center = kids.length === 1 ? (d % 2 === 0 ? 1 : -1) * 22 : -spread / 2 + spread * (acc + share / 2);
+      const center = kids.length === 1 ? (d % 2 === 0 ? 1 : -1) * (solo ? 8 : 22) : -spread / 2 + spread * (acc + share / 2);
       acc += share;
       const ka = aEnd + center + (rnd() - 0.5) * 8;
       if (k.children.length) {
@@ -203,7 +208,7 @@ export function paintTree(roots: Unit[], lang: Lang, rootLabel: string) {
 
   const top: Unit = roots.length === 1 ? roots[0] : { id: "__root", primary: { id: "__root", name: { en: rootLabel }, gender: "male" }, children: roots };
   const topText = roots.length === 1 ? label(roots[0]) : rootLabel;
-  const base = 128;
+  const soloRoot = top.children.length === 1 && top.children[0].children.length > 0, base = soloRoot ? 150 : 128;
   branch([0, 0], 0, 320, base, -1, top, topText, top.children);
   ext(0, 0, base);
 

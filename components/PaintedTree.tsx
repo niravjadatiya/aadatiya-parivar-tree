@@ -15,11 +15,18 @@ export default function PaintedTree({ roots, lang, rootLabel, onSelect, labels }
   const pinch = useRef(0);
 
   const fit = useCallback(() => {
-    const el = box.current; if (!el) return;
+    const el = box.current; if (!el || !el.clientWidth || !el.clientHeight) return; // not laid out yet: the observer below refits
     const k = Math.min(el.clientWidth / vb.w, el.clientHeight / vb.h);
     setView({ k, x: (el.clientWidth - vb.w * k) / 2 - vb.x * k, y: (el.clientHeight - vb.h * k) / 2 - vb.y * k });
   }, [vb]);
-  useEffect(() => { fit(); }, [fit]);
+  useEffect(() => {
+    fit();
+    const el = box.current; if (!el || typeof ResizeObserver === "undefined") return;
+    let first = !el.clientWidth || !el.clientHeight; // only refit on resize while we have never had a size
+    const ro = new ResizeObserver(() => { if (first && el.clientWidth && el.clientHeight) { first = false; fit(); } });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [fit]);
 
   const zoomAt = (f: number, cx: number, cy: number) => setView((v) => {
     const k = Math.min(4, Math.max(0.1, v.k * f)), s = k / v.k;
