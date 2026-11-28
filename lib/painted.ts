@@ -182,36 +182,102 @@ export function paintTree(roots: Unit[], lang: Lang, rootLabel: string) {
       }
     }
 
-    const weights = kids.map((k) => leafCount(k)), total = weights.reduce((s, v) => s + v, 0);
-    const leafKids = kids.filter((k) => !k.children.length).length;
-    const maxSpread = d > 0 ? 150 : 190;
-    const spread = Math.min(maxSpread, Math.max(34 * Math.sqrt(total) * 1.5, 44 * kids.length, leafKids > 1 ? 40 * kids.length : 0));
-    let acc = 0;
-    kids.forEach((k, i) => {
-      const share = weights[i] / total;
-      const center = kids.length === 1 ? (d % 2 === 0 ? 1 : -1) * (solo ? 8 : 22) : -spread / 2 + spread * (acc + share / 2);
-      acc += share;
-      const ka = aEnd + center + (rnd() - 0.5) * 8;
-      if (k.children.length) {
-        const ovl = Math.max(30, w1 * 1.4), lead2: Pt[] = [end];
-        for (let i = pts.length - 2, run2 = 0; i >= 0 && run2 < ovl; i--) { run2 += Math.hypot(pts[i][0] - pts[i + 1][0], pts[i][1] - pts[i + 1][1]); lead2.unshift(pts[i]); }
-        branch(end, ka, Math.max(140, len * (kids.length === 1 ? 0.84 : 0.92)), Math.max(22, w1), d + 1, k, label(k), k.children, aEnd, lead2);
-      } else {
-        // choose a direction and twig length where the leaf does not overlap leaves already placed
-        const tl0 = 30 + rnd() * 14, jitter = (rnd() - 0.5) * 16, L = leafLen(k);
-        let best = { ka2: ka, tl: tl0, pen: Infinity };
-        search: for (const dl of [0, 14, 28]) for (const da of [0, 10, -10, 20, -20, 32, -32, 45, -45]) {
-          const ka2 = ka + da, tl = tl0 + dl, sd2 = dir(ka2);
-          const pen = leafPenalty(end[0] + sd2[0] * tl, end[1] + sd2[1] * tl, ka2 - 90 + jitter, L);
-          if (pen < best.pen) best = { ka2, tl, pen };
-          if (pen === 0) break search;
+    if (kids.length === 1 && kids[0].children.length) {
+      // still on the single line of descent: keep growing the trunk
+      const ka = aEnd + (d % 2 === 0 ? 1 : -1) * (solo ? 8 : 22) + (rnd() - 0.5) * 8;
+      const ovl = Math.max(30, w1 * 1.4), lead2: Pt[] = [end];
+      for (let i = pts.length - 2, run2 = 0; i >= 0 && run2 < ovl; i--) { run2 += Math.hypot(pts[i][0] - pts[i + 1][0], pts[i][1] - pts[i + 1][1]); lead2.unshift(pts[i]); }
+      branch(end, ka, Math.max(140, len * 0.84), Math.max(22, w1), d + 1, kids[0], label(kids[0]), kids[0].children, aEnd, lead2);
+    } else if (kids.length) crown(end, w1, kids);
+  }
+
+  // Bark, highlights, name and foliage for one limb of the crown.
+  function limb(own: Pt[], w0: number, w1: number, u: Unit, rnd: () => number) {
+    const pid = esc(u.primary.id), text = label(u), len = plen(own), T = arcT(own), end = own[own.length - 1], decay = 5;
+    own.forEach((p) => ext(p[0], p[1], w0 * 0.4));
+    bark += `<path data-pid="${pid}" style="cursor:pointer" d="${ribbon(own, w0, w1, 0, 0, 1, decay, false, 0)}" fill="${BARK}"/><circle cx="${f(end[0])}" cy="${f(end[1])}" r="${f(w1 * 0.5)}" fill="${BARK}"/>`;
+    shade += `<path d="${ribbon(own, w0, w1, 0, 0.4, 0.28, decay, true, 0)}" fill="${BARK_DARK}" opacity=".55" pointer-events="none"/>`;
+    hi += `<path d="${ribbon(own, w0, w1, 0, -0.34, 0.26, decay, true, 0)}" fill="${BARK_LIGHT}" opacity=".6" pointer-events="none"/>`;
+    const lid = "p" + uid++, lr = end[0] >= own[0][0], ps = lr ? own : own.slice().reverse();
+    defs += `<path id="${lid}" d="${polyline(ps)}"/>`;
+    const wMid = widthAt(w0, w1, 0.65, 0, decay, 0);
+    let fs = Math.min(16, Math.max(11, wMid * 0.62));
+    const room = len * 0.6;
+    if (text.length * fs * 0.56 > room) fs = Math.max(9, room / (text.length * 0.56));
+    labels += `<text data-pid="${pid}" style="cursor:pointer" font-size="${f(fs)}" fill="#FBEFE3" font-weight="700" stroke="${BARK_DARK}" stroke-width="2.4" paint-order="stroke" stroke-linejoin="round"><textPath href="#${lid}" startOffset="${lr ? 66 : 34}%" text-anchor="middle" dy="${f(fs * 0.35)}">${esc(text)}</textPath></text>`;
+    const n = 6 + Math.floor(rnd() * 4);
+    for (let i = 0; i < n; i++) {
+      const idx = Math.floor((0.5 + rnd() * 0.48) * (own.length - 1)), p = own[idx];
+      const q = own[Math.min(own.length - 1, idx + 1)], r0 = own[Math.max(0, idx - 1)];
+      const tx = q[0] - r0[0], ty = q[1] - r0[1], tm = Math.hypot(tx, ty) || 1;
+      const side = i % 2 ? 1 : -1, wHere = widthAt(w0, w1, T[idx], 0, decay, 0);
+      const tang = (Math.atan2(ty, tx) * 180) / Math.PI;
+      decoLeaf(p[0] + (-ty / tm) * side * wHere * 0.42, p[1] + (tx / tm) * side * wHere * 0.42, tang + side * (38 + rnd() * 26), 0.65 + rnd() * 0.45, rnd);
+    }
+  }
+
+  // The crown: every family gets its own wedge of the sky, sized by what its descendants need.
+  // Limbs are drawn in polar space (radius + angle around the fork) with the same easing, so
+  // sibling limbs keep their left-to-right order at every radius and cannot cross.
+  function crown(c: Pt, trunkW: number, kids: Unit[]) {
+    const HALF = 94, SX = 1.04, SY = 1.08; // slightly rounder than a flat fan
+    // how much of the sky a family wants: one share per leaf, with a floor so a lone limb still has room
+    const need = (u: Unit): number => (u.children.length ? Math.max(1.5, u.children.reduce((s, k) => s + need(k), 0)) : 1);
+    const at = (r: number, th: number): Pt => [c[0] + Math.sin(rad(th)) * r * SX, c[1] - Math.cos(rad(th)) * r * SY];
+    // `bend` is shared by all siblings, so their angle changes with radius in the same way and they cannot cross
+    const arcPts = (r0: number, th0: number, r1: number, th1: number, bend: number, n = 48): Pt[] =>
+      Array.from({ length: n + 1 }, (_, i) => {
+        const r = r0 + ((r1 - r0) * i) / n, q = Math.min(1, (r - r0) / bend), e = q * q * (3 - 2 * q);
+        return at(r, th0 + (th1 - th0) * e);
+      });
+
+    const leaves: (() => void)[] = [];
+    const grow = (list: Unit[], d: number, r0: number, th0: number, lo: number, hi_: number, pw: number) => {
+      const needs = list.map(need), total = needs.reduce((s, v) => s + v, 0);
+      const span = hi_ - lo;
+      const weights = list.map(leafCount), wTotal = weights.reduce((s, v) => s + v, 0);
+      // each limb is only as long as its name needs, or as far as it must go for its own children to have elbow room
+      const wedges = needs.map((v) => span * (v / total));
+      const ends = list.map((k, i) => {
+        if (!k.children.length) return 0;
+        const nameLen = Math.max(120, label(k).length * 8 + (d === 1 ? 110 : 50));
+        const room = (k.children.length * 46) / rad(Math.max(6, wedges[i]));
+        return Math.max(r0 + nameLen, Math.min(r0 + nameLen + 170, room));
+      });
+      const limbEnds = ends.filter(Boolean);
+      const bend = limbEnds.length ? (Math.min(...limbEnds) - r0) * 0.9 : 90;
+      let a = lo, leafNo = 0;
+      list.forEach((k, i) => {
+        const wedge = wedges[i], th = a + wedge / 2, rnd = rngFor(k.id);
+        const from = a; a += wedge;
+        if (k.children.length) {
+          const w0 = list.length === 1 ? pw : Math.max(24, pw * Math.min(0.94, Math.sqrt(weights[i] / wTotal) * 1.25));
+          const w1 = k.children.some((g) => g.children.length) ? Math.max(20, w0 * 0.72) : Math.max(15, w0 * 0.58);
+          limb(arcPts(r0, th0, ends[i], th, bend), w0, w1, k, rnd);
+          grow(k.children, d + 1, ends[i], th, from, from + wedge, w1);
+        } else {
+          const tier = leafNo++ % 3;
+          // leaves are placed after every limb, each moving outward only as far as it needs to stay clear
+          leaves.push(() => {
+            const L = leafLen(k);
+            const base = r0 + Math.max(44, Math.min(110, r0 * Math.abs(rad(th - th0)) * 0.55)) + tier * 34;
+            let best = { r: base, th, pen: Infinity };
+            search: for (let extra = 0; extra <= 300; extra += 25) for (const da of [0, 1.5, -1.5, 3, -3]) {
+              const t = at(base + extra, th + da), o = at(base + extra + 40, th + da);
+              const ang = (Math.atan2(o[1] - t[1], o[0] - t[0]) * 180) / Math.PI;
+              const pen = leafPenalty(t[0], t[1], ang, L);
+              if (pen < best.pen) best = { r: base + extra, th: th + da, pen };
+              if (pen < 4) break search;
+            }
+            const tw = arcPts(r0, th0, best.r, best.th, (best.r - r0) * 0.9, 16), tip = tw[tw.length - 1], out = at(best.r + 40, best.th);
+            twigs += `<path d="${ribbon(tw, 8, 2.6)}" fill="${BARK}"/>`;
+            nameLeaf(tip[0], tip[1], (Math.atan2(out[1] - tip[1], out[0] - tip[0]) * 180) / Math.PI, k, rnd);
+          });
         }
-        const sd = dir(best.ka2), tip: Pt = [end[0] + sd[0] * best.tl, end[1] + sd[1] * best.tl];
-        const tw = bez(end, [end[0] + sd[0] * best.tl * 0.4, end[1] + sd[1] * best.tl * 0.4 - 3], [tip[0] - sd[0] * best.tl * 0.3, tip[1] - sd[1] * best.tl * 0.3 + 3], tip, 8);
-        twigs += `<path d="${ribbon(tw, 6.5, 2.6)}" fill="${BARK}"/>`;
-        nameLeaf(tip[0], tip[1], best.ka2 - 90 + jitter, k, rnd);
-      }
-    });
+      });
+    };
+    grow(kids, 1, 0, 0, -HALF, HALF, trunkW);
+    leaves.forEach((place) => place());
   }
 
   const top: Unit = roots.length === 1 ? roots[0] : { id: "__root", primary: { id: "__root", name: { en: rootLabel }, gender: "male" }, children: roots };
