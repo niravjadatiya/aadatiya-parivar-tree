@@ -74,7 +74,7 @@ const leafVeins = (L: number, W: number) => {
 
 const leafCount = (u: Unit): number => (u.children.length ? u.children.reduce((s, c) => s + leafCount(c), 0) : 1);
 
-export function paintTree(roots: Unit[], lang: Lang, rootLabel: string) {
+export function paintTree(roots: Unit[], lang: Lang, _rootLabel: string) {
   let defs = "", twigs = "", bark = "", shade = "", hi = "", deco = "", labels = "", named = "", uid = 0;
   let minX = 0, maxX = 0, minY = 0;
   const ext = (x: number, y: number, pad = 0) => { minX = Math.min(minX, x - pad); maxX = Math.max(maxX, x + pad); minY = Math.min(minY, y - pad); };
@@ -122,11 +122,12 @@ export function paintTree(roots: Unit[], lang: Lang, rootLabel: string) {
     const rnd = rngFor(u.id);
     const trunk = d < 0;
     // an ancestor with a single child (a long line of descent) only needs as much trunk as the name; branches that fork keep full room
-    const solo = kids.length === 1 && kids[0].children.length > 0;
+    const heirs = kids.filter((k) => k.children.length), onTrunk = heirs.length === 1 && kids.length <= 4;
+    const solo = onTrunk;
     if (solo) len = trunk ? 150 : 74; // short, wide trunk blocks with the name written straight across
     else if (!trunk) len = Math.min(340, Math.max(len, text.length * 11.5)); // long enough for the name
     // arch upward: the branch bends toward vertical as it grows (like a bough)
-    const lean = kids.length === 1 && kids[0].children.length ? -1 : 0; // trunk leans toward its only branch so they join smoothly
+    const lean = onTrunk ? -1 : 0; // trunk leans toward its only branch so they join smoothly
     const aEnd = trunk ? lean * 0 : ang * (0.6 + rnd() * 0.12);
     const aMid = trunk ? lean * 0 : ang * 0.92;
     const p0 = start;
@@ -182,13 +183,23 @@ export function paintTree(roots: Unit[], lang: Lang, rootLabel: string) {
       }
     }
 
-    if (kids.length === 1 && kids[0].children.length) {
+    if (onTrunk) {
+      const heir = heirs[0];
+      kids.filter((k) => k !== heir).forEach((k, i) => sideLeaf(end, w1, i % 2 ? -1 : 1, i, k));
       // still on the single line of descent: keep growing the trunk
       const ka = aEnd + (d % 2 === 0 ? 1 : -1) * (solo ? 8 : 22) + (rnd() - 0.5) * 8;
       const ovl = Math.max(30, w1 * 1.4), lead2: Pt[] = [end];
       for (let i = pts.length - 2, run2 = 0; i >= 0 && run2 < ovl; i--) { run2 += Math.hypot(pts[i][0] - pts[i + 1][0], pts[i][1] - pts[i + 1][1]); lead2.unshift(pts[i]); }
-      branch(end, ka, Math.max(140, len * 0.84), Math.max(22, w1), d + 1, kids[0], label(kids[0]), kids[0].children, aEnd, lead2);
+      branch(end, ka, Math.max(140, len * 0.84), Math.max(22, w1), d + 1, heir, label(heir), heir.children, aEnd, lead2);
     } else if (kids.length) crown(end, w1, kids);
+  }
+
+  // A named leaf growing straight out of the side of the trunk.
+  function sideLeaf(p: Pt, w: number, side: number, i: number, k: Unit) {
+    const x = p[0] + side * w * 0.46, y = p[1] - Math.floor(i / 2) * 40, ang = side > 0 ? -18 : 198;
+    const tip: Pt = [x + Math.cos(rad(ang)) * 34, y + Math.sin(rad(ang)) * 34];
+    twigs += `<path d="${ribbon(bez([x, y], [x + side * 14, y], [tip[0] - side * 10, tip[1] + 4], tip, 8), 7, 2.6)}" fill="${BARK}"/>`;
+    nameLeaf(tip[0], tip[1], ang, k, rngFor(k.id));
   }
 
   // Bark, highlights, name and foliage for one limb of the crown.
@@ -280,11 +291,16 @@ export function paintTree(roots: Unit[], lang: Lang, rootLabel: string) {
     leaves.forEach((place) => place());
   }
 
-  const top: Unit = roots.length === 1 ? roots[0] : { id: "__root", primary: { id: "__root", name: { en: rootLabel }, gender: "male" }, children: roots };
-  const topText = roots.length === 1 ? label(roots[0]) : rootLabel;
-  const soloRoot = top.children.length === 1 && top.children[0].children.length > 0, base = soloRoot ? 150 : 128;
-  branch([0, 0], 0, 320, base, -1, top, topText, top.children);
-  ext(0, 0, base);
+  // The biggest line of descent is the tree. Anyone not linked to it (usually a missing parent) must not
+  // split the trunk, so they appear as separate leaves low on the trunk.
+  const size = (u: Unit): number => 1 + u.children.reduce((n, c) => n + size(c), 0);
+  const [top, ...unlinked] = [...roots].sort((a, b) => size(b) - size(a));
+  if (top) {
+    const soloRoot = top.children.filter((c) => c.children.length).length === 1, base = soloRoot ? 150 : 128;
+    branch([0, 0], 0, 320, base, -1, top, label(top), top.children);
+    unlinked.forEach((u, i) => sideLeaf([0, -70], base * 0.9, i % 2 ? -1 : 1, i, u));
+    ext(0, 0, base);
+  }
 
   // root lobes and ground drawn behind the tree
   const flare = `<path d="M-64 -80C-76 -20 -130 10 -218 20C-150 34 -90 26 -56 14Z" fill="${BARK}"/><path d="M64 -80C76 -20 130 10 218 20C150 34 90 26 56 14Z" fill="${BARK}"/>`;
